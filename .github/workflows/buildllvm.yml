@@ -147,7 +147,7 @@ jobs:
             -DLLVM_ENABLE_TERMINFO=OFF \
             -DLLVM_USE_LINKER=mold \
             -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
-            -DLLVM_ENABLE_RUNTIMES=compiler-rt;libc;libcxx;libcxxabi;libunwind \
+            -DLLVM_ENABLE_RUNTIMES=compiler-rt;libcxx;libcxxabi;libunwind \
             -DLLVM_ENABLE_PROJECTS=llvm;clang;clang-tools-extra;lld \
             -DCPACK_GENERATOR=TXZ \
             -DCPACK_ARCHIVE_THREADS=0
