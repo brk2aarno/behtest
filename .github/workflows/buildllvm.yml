@@ -1,6 +1,9 @@
 name: BuildLLVM
 
 on:
+  push:
+    branches: [ "test-build-llvm" ]
+
   workflow_dispatch:
     inputs:
       release-version:
@@ -96,6 +99,14 @@ jobs:
 
         echo "target-cmake-flags=$target_cmake_flags" >> $GITHUB_OUTPUT
         echo "build-flang=$build_flang" >> $GITHUB_OUTPUT
+
+        
+  build-stage1:
+    name: "Build Stage 1"
+    needs: prepare
+    if: github.repository == 'llvm/llvm-project'
+    runs-on: ${{ inputs.runs-on }}
+    steps:
 
     - name: Install Ninja
       uses: llvm/actions/install-ninja@22e9f909d35b50bd1181709564bfe816eaeaae81 # main
