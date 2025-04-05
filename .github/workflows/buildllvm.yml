@@ -115,6 +115,15 @@ jobs:
       with:
         make-default: false  # /usr/local/bin/mold
 
+    - name: Checkout LLVM
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      with:
+        repository: 'llvm/llvm-project'
+        ref: ${{ needs.prepare.outputs.ref }}
+        path: 'llvmproj'
+        clean: false
+        fetch-depth: 1
+
     - name: Build Clang
       id: build
       shell: bash
