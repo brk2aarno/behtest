@@ -141,7 +141,7 @@ jobs:
             -DLLVM_BUILD_LLVM_DYLIB=ON \
             -DLLVM_LINK_LLVM_DYLIB=ON \
             -DLLVM_USE_STATIC_ZSTD=ON \
-            -DLLVM_USE_LINKER=/usr/local/bin/mold \
+            -DLLVM_USE_LINKER=mold \
             -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
             -DLLVM_ENABLE_PROJECTS=llvm;clang;clang-tools-extra;lld
         ninja -v -C llvmproj/_build
