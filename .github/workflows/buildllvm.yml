@@ -101,8 +101,8 @@ jobs:
         echo "build-flang=$build_flang" >> $GITHUB_OUTPUT
 
         
-  build-stage1:
-    name: "Build Stage 1"
+  build-llvm-clang:
+    name: "Build LLVM and Clang"
     needs: prepare
     runs-on: ${{ inputs.runs-on }}
     steps:
@@ -141,9 +141,16 @@ jobs:
             -DLLVM_BUILD_LLVM_DYLIB=ON \
             -DLLVM_LINK_LLVM_DYLIB=ON \
             -DLLVM_USE_STATIC_ZSTD=ON \
+            -DLLVM_ENABLE_LIBXML2=OFF \
+            -DLLVM_ENABLE_CURL=OFF \
+            -DLLVM_ENABLE_HTTPLIB=OFF \
+            -DLLVM_ENABLE_TERMINFO=OFF \
             -DLLVM_USE_LINKER=mold \
             -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
-            -DLLVM_ENABLE_PROJECTS=llvm;clang;clang-tools-extra;lld
+            -DLLVM_ENABLE_RUNTIMES=compiler-rt;libc;libcxx;libcxxabi;libunwind \
+            -DLLVM_ENABLE_PROJECTS=llvm;clang;clang-tools-extra;lld \
+            -DCPACK_GENERATOR=TXZ \
+            -DCPACK_ARCHIVE_THREADS=0
         ninja -v -C llvmproj/_build
         # There is a race condition on the MacOS builders and this command is here
         # to help debug that when it happens.
@@ -154,7 +161,7 @@ jobs:
       shell: bash
       run: |
         which cmake
-        ninja -C llvmproj/_build stage2-package
+        ninja -C llvmproj/_build package
 
         # Copy Release artifact to the workspace so it is easier to upload.
         # This is necessary, because on Windows, the build-prefix path can
