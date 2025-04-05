@@ -1,3 +1,5 @@
+name: BuildLLVM
+
 on:
   workflow_dispatch:
     inputs:
