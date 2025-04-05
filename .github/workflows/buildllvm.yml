@@ -104,7 +104,6 @@ jobs:
   build-stage1:
     name: "Build Stage 1"
     needs: prepare
-    if: github.repository == 'llvm/llvm-project'
     runs-on: ${{ inputs.runs-on }}
     steps:
 
