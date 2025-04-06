@@ -153,6 +153,12 @@ jobs:
         chmod +x zig-wrappers/zig-*
         export PATH=$PWD/zig-wrappers:$PATH
 
+        sed 's/Bsymbolic-functions/Bsymbolic/' llvmproj/clang/tools/clang-shlib/CMakeLists.txt > tmp
+        mv tmp llvmproj/clang/tools/clang-shlib/CMakeLists.txt
+
+        sed 's/Bsymbolic-functions/Bsymbolic/' llvmproj/llvm/tools/llvm-shlib/CMakeLists.txt > tmp
+        mv tmp llvmproj/llvm/tools/llvm-shlib/CMakeLists.txt
+
         # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
         # so we need to set some extra cmake flags to disable this.
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build \
@@ -174,12 +180,12 @@ jobs:
             -DLLVM_ENABLE_CURL=OFF \
             -DLLVM_ENABLE_HTTPLIB=OFF \
             -DLLVM_ENABLE_TERMINFO=OFF \
-            #-DLLVM_USE_LINKER=mold \
             -DLLVM_ENABLE_LIBCXX=ON \
             -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
             -DLLVM_ENABLE_PROJECTS="llvm;clang" \
             -DCPACK_GENERATOR=TXZ \
             -DCPACK_ARCHIVE_THREADS=0
+            #-DLLVM_USE_LINKER=mold \
             #-C llvmproj/clang/cmake/caches/Release.cmake \
             #-DLLVM_ENABLE_RUNTIMES="compiler-rt;libc;libcxx;libcxxabi;libunwind" \
         ninja -v -C llvmproj/_build
