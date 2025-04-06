@@ -45,6 +45,10 @@ jobs:
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       # for print_os_arch.py
 
+    - name: Inspect cwd
+      shell: bash
+      run: ls -lh
+
     - name: Checkout LLVM
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       with:
@@ -58,6 +62,10 @@ jobs:
       shell: bash
       run: |
         pip install --require-hashes -r ./llvmproj/llvm/utils/git/requirements.txt
+
+    - name: Inspect cwd again
+      shell: bash
+      run: ls -lh
 
     - name: Collect Variables
       id: vars
