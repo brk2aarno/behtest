@@ -127,6 +127,11 @@ jobs:
       with:
         make-default: false  # /usr/local/bin/mold
 
+    - name: Install zig
+      uses: mlugg/setup-zig@82c18a2c731f0be2ded2e45b51b135cc69e285c7
+      with:
+        version: 0.14.0
+
     - name: Checkout LLVM
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       with:
@@ -140,9 +145,19 @@ jobs:
       id: build
       shell: bash
       run: |
+        mkdir zig-wrappers
+        echo '#!/bin/bash' >> zig-wrappers/zig-cc
+        echo 'zig cc "$@"' >> zig-wrappers/zig-cc
+        echo '#!/bin/bash' >> zig-wrappers/zig-c++
+        echo 'zig c++ "$@"' >> zig-wrappers/zig-c++
+        chmod +x zig-wrappers/zig-*
+        export PATH=$PWD/zig-wrappers:$PATH
+
         # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
         # so we need to set some extra cmake flags to disable this.
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build \
+            -DCMAKE_C_COMPILER=zig-cc \
+            -DCMAKE_CXX_COMPILER=zig-c++ \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -DCPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
@@ -152,13 +167,14 @@ jobs:
             -DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF \
             -DLLVM_BUILD_LLVM_DYLIB=ON \
             -DLLVM_LINK_LLVM_DYLIB=ON \
+            -DLLVM_DYLIB_EXPORT_ALL=ON \ # this is redundant i think
             -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
             -DLLVM_ENABLE_ZSTD=OFF \
             -DLLVM_ENABLE_LIBXML2=OFF \
             -DLLVM_ENABLE_CURL=OFF \
             -DLLVM_ENABLE_HTTPLIB=OFF \
             -DLLVM_ENABLE_TERMINFO=OFF \
-            -DLLVM_USE_LINKER=mold \
+            #-DLLVM_USE_LINKER=mold \
             -DLLVM_ENABLE_LIBCXX=ON \
             -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
             -DLLVM_ENABLE_PROJECTS="llvm;clang" \
@@ -186,7 +202,7 @@ jobs:
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
       with:
-        name: ${{ runner.os }}-${{ runner.arch }}-release-binary
+        name: ${{ runner.os }}-${{ runner.arch }}-release-viazig
         # Due to path differences on Windows when running in bash vs running on node,
         # we need to search for files in the current workspace.
         path: |
