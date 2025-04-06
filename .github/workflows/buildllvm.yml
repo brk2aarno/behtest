@@ -132,7 +132,6 @@ jobs:
         # so we need to set some extra cmake flags to disable this.
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
-            -C llvmproj/clang/cmake/caches/Release.cmake \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -DCPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -153,6 +152,7 @@ jobs:
             -DLLVM_ENABLE_PROJECTS="llvm;clang" \
             -DCPACK_GENERATOR=TXZ \
             -DCPACK_ARCHIVE_THREADS=0
+            #-C llvmproj/clang/cmake/caches/Release.cmake \
             #-DLLVM_ENABLE_RUNTIMES="compiler-rt;libc;libcxx;libcxxabi;libunwind" \
         ninja -v -C llvmproj/_build
         # There is a race condition on the MacOS builders and this command is here
