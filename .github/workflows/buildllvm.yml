@@ -41,6 +41,10 @@ jobs:
       with:
         python-version: '3.12'
 
+    - name: Checkout builder repo
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      # for print_os_arch.py
+
     - name: Checkout LLVM
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       with:
@@ -68,12 +72,12 @@ jobs:
         echo "ref=$ref" >> $GITHUB_OUTPUT
         echo "upload=$upload" >> $GITHUB_OUTPUT
 
-        release_binary_basename="LLVM-$release_version-${{ runner.os }}-${{ runner.arch }}"
+        # Detect necessary CMake flags
+        target=$(python3 print_os_arch.py)
+
+        release_binary_basename="LLVM-$release_version-$target"
         echo "release-binary-basename=$release_binary_basename" >> $GITHUB_OUTPUT
         echo "release-binary-filename=$release_binary_basename.tar.xz" >> $GITHUB_OUTPUT
-
-        # Detect necessary CMake flags
-        target="${{ runner.os }}-${{ runner.arch }}"
 
         echo "enable-pgo=false" >> $GITHUB_OUTPUT
         target_cmake_flags="-DLLVM_RELEASE_ENABLE_PGO=OFF"
@@ -134,7 +138,7 @@ jobs:
             ${{ needs.prepare.outputs.target-cmake-flags }} \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -DCPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DLLVM_TARGETS_TO_BUILD=host \
             -DLLVM_ENABLE_ASSERTIONS=ON \
             -DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF \
@@ -163,15 +167,14 @@ jobs:
     - name: Build Release Package
       shell: bash
       run: |
-        which cmake
         ninja -C llvmproj/_build package
 
         # Copy Release artifact to the workspace so it is easier to upload.
         # This is necessary, because on Windows, the build-prefix path can
         # only be used on bash steps, because it uses the form of /d/files/
         # and other steps expect D:\files.
-        ls llvmproj/_build/tools/clang/*-bins/
-        mv llvmproj/_build/tools/clang/stage2-bins/${{ needs.prepare.outputs.release-binary-filename }} .
+        mv llvmproj/_build/*.xz .
+        ls ${{ needs.prepare.outputs.release-binary-filename }}
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
       with:
