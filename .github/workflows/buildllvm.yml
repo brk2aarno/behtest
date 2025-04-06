@@ -167,7 +167,7 @@ jobs:
             -DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF \
             -DLLVM_BUILD_LLVM_DYLIB=ON \
             -DLLVM_LINK_LLVM_DYLIB=ON \
-            -DLLVM_DYLIB_EXPORT_ALL=ON \ # this is redundant i think
+            -DLLVM_DYLIB_EXPORT_ALL=ON \
             -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
             -DLLVM_ENABLE_ZSTD=OFF \
             -DLLVM_ENABLE_LIBXML2=OFF \
