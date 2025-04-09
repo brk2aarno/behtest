@@ -166,12 +166,13 @@ jobs:
       run: |
         # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
         # so we need to set some extra cmake flags to disable this.
-        export PATH=llvmproj/_build_stage1/bin:$PATH
+        STAGE1BIN=$PWD/llvmproj/_build_stage1/bin
+        export PATH=$STAGE1BIN:$PATH
         which clang-20
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build_stage2 \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
-            -DCMAKE_C_COMPILER=clang-20 \
-            -DCMAKE_CXX_COMPILER=clang++-20 \
+            -DCMAKE_C_COMPILER=$STAGE1BIN/clang-20 \
+            -DCMAKE_CXX_COMPILER=$STAGE1BIN/clang++ \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -DCPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
