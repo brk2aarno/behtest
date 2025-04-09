@@ -167,6 +167,7 @@ jobs:
         # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
         # so we need to set some extra cmake flags to disable this.
         export PATH=llvmproj/_build_stage1/bin:$PATH
+        which clang-20
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build_stage2 \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
             -DCMAKE_C_COMPILER=clang-20 \
@@ -180,7 +181,6 @@ jobs:
             -DLLVM_BUILD_LLVM_DYLIB=ON \
             -DLLVM_LINK_LLVM_DYLIB=ON \
             -DLLVM_DYLIB_EXPORT_ALL=ON \
-            -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
             -DLLVM_ENABLE_ZSTD=OFF \
             -DLLVM_ENABLE_LIBXML2=OFF \
             -DLLVM_ENABLE_CURL=OFF \
@@ -189,9 +189,12 @@ jobs:
             -DLLVM_ENABLE_LIBCXX=ON \
             -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
             -DLLVM_ENABLE_PROJECTS="llvm;clang;lld" \
+            -DLLVM_ENABLE_RUNTIMES="compiler-rt;libcxx;libcxxabi" \
             -DLLVM_ENABLE_LLD=ON \
+            -DCLANG_DEFAULT_RTLIB=compiler-rt \
             -DCPACK_GENERATOR=TXZ \
             -DCPACK_ARCHIVE_THREADS=0
+            #-DCLANG_DEFAULT_UNWINDLIB=libunwind \
             #-DLLVM_ENABLE_RUNTIMES="compiler-rt;libcxx;libcxxabi;libunwind" \
             
         ninja -v -C llvmproj/_build_stage2
