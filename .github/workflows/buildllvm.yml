@@ -126,12 +126,7 @@ jobs:
       uses: rui314/setup-mold@v1
       with:
         make-default: false  # /usr/local/bin/mold
-
-    - name: Install zig
-      uses: mlugg/setup-zig@82c18a2c731f0be2ded2e45b51b135cc69e285c7
-      with:
-        version: 0.14.0
-
+        
     - name: Checkout LLVM
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       with:
@@ -141,30 +136,41 @@ jobs:
         clean: false
         fetch-depth: 1
 
-    - name: Build Clang
-      id: build
+    - name: Build Clang (stage 1)
+      id: build-stage1
       shell: bash
       run: |
-        mkdir zig-wrappers
-        echo '#!/bin/bash' >> zig-wrappers/zig-cc
-        echo 'zig cc "$@"' >> zig-wrappers/zig-cc
-        echo '#!/bin/bash' >> zig-wrappers/zig-c++
-        echo 'zig c++ "$@"' >> zig-wrappers/zig-c++
-        chmod +x zig-wrappers/zig-*
-        export PATH=$PWD/zig-wrappers:$PATH
-
-        sed 's/Bsymbolic-functions/Bsymbolic/' llvmproj/clang/tools/clang-shlib/CMakeLists.txt > tmp
-        mv tmp llvmproj/clang/tools/clang-shlib/CMakeLists.txt
-
-        sed 's/Bsymbolic-functions/Bsymbolic/' llvmproj/llvm/tools/llvm-shlib/CMakeLists.txt > tmp
-        mv tmp llvmproj/llvm/tools/llvm-shlib/CMakeLists.txt
-
         # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
         # so we need to set some extra cmake flags to disable this.
-        cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build \
-            -DCMAKE_C_COMPILER=zig-cc \
-            -DCMAKE_CXX_COMPILER=zig-c++ \
+        cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build_stage1 \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
+            -DLLVM_PARALLEL_LINK_JOBS=1 \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
+            -DLLVM_TARGETS_TO_BUILD=host \
+            -DLLVM_ENABLE_ZSTD=OFF \
+            -DLLVM_ENABLE_LIBXML2=OFF \
+            -DLLVM_ENABLE_CURL=OFF \
+            -DLLVM_ENABLE_HTTPLIB=OFF \
+            -DLLVM_ENABLE_TERMINFO=OFF \
+            -DLLVM_ENABLE_PROJECTS="llvm;clang;lld" \
+            -DLLVM_USE_LINKER=mold
+            
+        ninja -v -C llvmproj/_build_stage1
+        # There is a race condition on the MacOS builders and this command is here
+        # to help debug that when it happens.
+        ls -ltr llvmproj/_build_stage1
+
+    - name: Build Clang (stage 2)
+      id: build-stage2
+      shell: bash
+      run: |
+        # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
+        # so we need to set some extra cmake flags to disable this.
+        export PATH=llvmproj/_build_stage1/bin:$PATH
+        cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build_stage2 \
+            ${{ needs.prepare.outputs.target-cmake-flags }} \
+            -DCMAKE_C_COMPILER=clang-20 \
+            -DCMAKE_CXX_COMPILER=clang++-20 \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -DCPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
@@ -182,22 +188,21 @@ jobs:
             -DLLVM_ENABLE_TERMINFO=OFF \
             -DLLVM_ENABLE_LIBCXX=ON \
             -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
-            -DLLVM_ENABLE_PROJECTS="llvm;clang" \
+            -DLLVM_ENABLE_PROJECTS="llvm;clang;lld" \
+            -DLLVM_ENABLE_LLD=ON \
             -DCPACK_GENERATOR=TXZ \
             -DCPACK_ARCHIVE_THREADS=0
-            #-DLLVM_USE_LINKER=mold \
-            #-C llvmproj/clang/cmake/caches/Release.cmake \
-            #-DLLVM_ENABLE_RUNTIMES="compiler-rt;libc;libcxx;libcxxabi;libunwind" \
-        ninja -v -C llvmproj/_build
+            #-DLLVM_ENABLE_RUNTIMES="compiler-rt;libcxx;libcxxabi;libunwind" \
+            
+        ninja -v -C llvmproj/_build_stage2
         # There is a race condition on the MacOS builders and this command is here
         # to help debug that when it happens.
-        ls -ltr llvmproj/_build
-
+        ls -ltr llvmproj/_build_stage2
 
     - name: Build Release Package
       shell: bash
       run: |
-        ninja -C llvmproj/_build package
+        ninja -C llvmproj/_build_stage2 package
 
         # Copy Release artifact to the workspace so it is easier to upload.
         # This is necessary, because on Windows, the build-prefix path can
