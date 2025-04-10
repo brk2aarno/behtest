@@ -82,7 +82,7 @@ set_instrument_and_final_stage_var(CMAKE_MODULE_LINKER_FLAGS ${RELEASE_LINKER_FL
 set_final_stage_var(LLVM_ENABLE_RUNTIMES "${LLVM_RELEASE_ENABLE_RUNTIMES}" STRING)
 set_final_stage_var(LLVM_ENABLE_PROJECTS "${LLVM_RELEASE_ENABLE_PROJECTS}" STRING)
 
-set_final_stage_var(LLVM_TARGETS_TO_BUILD Native CACHE STRING "")
+set_final_stage_var(LLVM_TARGETS_TO_BUILD Native STRING "")
 
 set_final_stage_var(CPACK_GENERATOR "TXZ" STRING)
 set_final_stage_var(CPACK_ARCHIVE_THREADS "0" STRING)
