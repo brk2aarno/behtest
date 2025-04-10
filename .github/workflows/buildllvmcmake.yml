@@ -122,6 +122,10 @@ jobs:
     - name: Install Ninja
       uses: llvm/actions/install-ninja@22e9f909d35b50bd1181709564bfe816eaeaae81 # main
 
+    - name: Checkout builder repo
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      # for BuildClangTenjinRelease.cmake
+
     - name: Checkout LLVM
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       with:
@@ -140,7 +144,7 @@ jobs:
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
-            -C $PWD/BuildClangTenjinRelease.cmake 
+            -C BuildClangTenjinRelease.cmake 
             -DBOOTSTRAP_CPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
             -DBOOTSTRAP_LLVM_PARALLEL_LINK_JOBS=1
             #-DLLVM_ENABLE_LIBXML2=OFF \
