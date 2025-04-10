@@ -157,7 +157,9 @@ jobs:
         # This is necessary, because on Windows, the build-prefix path can
         # only be used on bash steps, because it uses the form of /d/files/
         # and other steps expect D:\files.
-        mv llvmproj/_build/*.xz .
+        find llvmproj/_build -iname ${{ needs.prepare.outputs.release-binary-filename }}
+        release_dir=`find llvmproj/_build -iname stage2-bins`
+        mv $release_dir/${{ needs.prepare.outputs.release-binary-filename }} .
         ls ${{ needs.prepare.outputs.release-binary-filename }}
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
