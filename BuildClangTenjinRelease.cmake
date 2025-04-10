@@ -82,9 +82,17 @@ set_instrument_and_final_stage_var(CMAKE_MODULE_LINKER_FLAGS ${RELEASE_LINKER_FL
 set_final_stage_var(LLVM_ENABLE_RUNTIMES "${LLVM_RELEASE_ENABLE_RUNTIMES}" STRING)
 set_final_stage_var(LLVM_ENABLE_PROJECTS "${LLVM_RELEASE_ENABLE_PROJECTS}" STRING)
 
-set_final_stage_var(LLVM_TARGETS_TO_BUILD Native STRING "")
+set_final_stage_var(LLVM_TARGETS_TO_BUILD Native STRING)
+
+set_final_stage_var(LLVM_BUILD_TYPE MinSizeRel STRING)
+set_final_stage_var(LLVM_ENABLE_ASSERTIONS "ON" BOOL)
+
+set_final_stage_var(LLVM_BUILD_LLVM_DYLIB "ON" BOOL)
+set_final_stage_var(LLVM_LINK_LLVM_DYLIB "ON" BOOL)
+set_final_stage_var(LLVM_DYLIB_EXPORT_ALL "ON" BOOL)
 
 set_final_stage_var(CPACK_GENERATOR "TXZ" STRING)
 set_final_stage_var(CPACK_ARCHIVE_THREADS "0" STRING)
 
+set_final_stage_var(LLVM_ENABLE_ZLIB "OFF" BOOL)
 set_final_stage_var(LLVM_USE_STATIC_ZSTD "ON" BOOL)
