@@ -144,9 +144,9 @@ jobs:
         # so we need to set some extra cmake flags to disable this.
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build_stage1 \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
-            -DLLVM_COMPILER_IS_GCC_COMPATIBLE=ON \
+            -DCPACK_PACKAGE_FILE_NAME="stage1_${{ needs.prepare.outputs.release-binary-basename }}" \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
-            -DCMAKE_BUILD_TYPE=MinSizeRel \
+            -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_TARGETS_TO_BUILD=host \
             -DLLVM_ENABLE_ZSTD=OFF \
             -DLLVM_ENABLE_LIBXML2=OFF \
@@ -162,6 +162,26 @@ jobs:
         # to help debug that when it happens.
         ls -ltr llvmproj/_build_stage1
 
+    - name: Build stage1 Package
+      shell: bash
+      run: |
+        ninja -C llvmpro2/_build_stage1 package
+
+        # Copy Release artifact to the workspace so it is easier to upload.
+        # This is necessary, because on Windows, the build-prefix path can
+        # only be used on bash steps, because it uses the form of /d/files/
+        # and other steps expect D:\files.
+        mv llvmproj/_build_stage1/*.xz .
+        ls stage1_${{ needs.prepare.outputs.release-binary-filename }}
+
+    - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+      with:
+        name: ${{ runner.os }}-${{ runner.arch }}-stage1-viazig
+        # Due to path differences on Windows when running in bash vs running on node,
+        # we need to search for files in the current workspace.
+        path: |
+          stage1_${{ needs.prepare.outputs.release-binary-filename }}
+
     - name: Build Clang (stage 2)
       id: build-stage2
       shell: bash
@@ -175,7 +195,6 @@ jobs:
             ${{ needs.prepare.outputs.target-cmake-flags }} \
             -DCMAKE_C_COMPILER=$STAGE1BIN/clang-20 \
             -DCMAKE_CXX_COMPILER=$STAGE1BIN/clang++ \
-            -DLLVM_COMPILER_IS_GCC_COMPATIBLE=ON \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -DCPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
@@ -221,7 +240,7 @@ jobs:
         # This is necessary, because on Windows, the build-prefix path can
         # only be used on bash steps, because it uses the form of /d/files/
         # and other steps expect D:\files.
-        mv llvmproj/_build/*.xz .
+        mv llvmproj/_build_stage2/*.xz .
         ls ${{ needs.prepare.outputs.release-binary-filename }}
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
