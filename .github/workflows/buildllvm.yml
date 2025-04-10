@@ -155,7 +155,9 @@ jobs:
             -DLLVM_ENABLE_TERMINFO=OFF \
             -DLLVM_ENABLE_PROJECTS="llvm;clang;lld" \
             -DLLVM_ENABLE_RUNTIMES="compiler-rt" \
-            -DLLVM_USE_LINKER=mold
+            -DLLVM_USE_LINKER=mold \
+            -DCPACK_GENERATOR=TXZ \
+            -DCPACK_ARCHIVE_THREADS=0
             
         ninja -v -C llvmproj/_build_stage1
         # There is a race condition on the MacOS builders and this command is here
