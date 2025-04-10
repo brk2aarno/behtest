@@ -144,6 +144,7 @@ jobs:
         # so we need to set some extra cmake flags to disable this.
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build_stage1 \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
+            -DLLVM_COMPILER_IS_GCC_COMPATIBLE=ON \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DLLVM_TARGETS_TO_BUILD=host \
@@ -174,6 +175,7 @@ jobs:
             ${{ needs.prepare.outputs.target-cmake-flags }} \
             -DCMAKE_C_COMPILER=$STAGE1BIN/clang-20 \
             -DCMAKE_CXX_COMPILER=$STAGE1BIN/clang++ \
+            -DLLVM_COMPILER_IS_GCC_COMPATIBLE=ON \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -DCPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
