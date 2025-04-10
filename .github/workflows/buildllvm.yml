@@ -165,7 +165,7 @@ jobs:
     - name: Build stage1 Package
       shell: bash
       run: |
-        ninja -C llvmpro2/_build_stage1 package
+        ninja -C llvmproj/_build_stage1 package
 
         # Copy Release artifact to the workspace so it is easier to upload.
         # This is necessary, because on Windows, the build-prefix path can
