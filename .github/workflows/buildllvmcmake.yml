@@ -144,7 +144,7 @@ jobs:
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
-            -C BuildClangTenjinRelease.cmake 
+            -C BuildClangTenjinRelease.cmake \
             -DBOOTSTRAP_CPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
             -DBOOTSTRAP_LLVM_PARALLEL_LINK_JOBS=1
             #-DLLVM_ENABLE_LIBXML2=OFF \
