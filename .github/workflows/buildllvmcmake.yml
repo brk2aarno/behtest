@@ -146,7 +146,7 @@ jobs:
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -C BuildClangTenjinRelease.cmake \
             -DBOOTSTRAP_CPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
-            -DBOOTSTRAP_CMAKE_INSTALL_PREFIX=$PWD/libcxx  
+            -DBOOTSTRAP_CMAKE_INSTALL_PREFIX=$PWD/libcxx \
             -DBOOTSTRAP_LLVM_PARALLEL_LINK_JOBS=1
             #-DLLVM_ENABLE_CURL=OFF \
             #-DLLVM_ENABLE_HTTPLIB=OFF \
