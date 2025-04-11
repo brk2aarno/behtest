@@ -193,6 +193,9 @@ jobs:
                ${{ needs.prepare.outputs.release-binary-basename }}
         ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
 
+        git log -n --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > git-src.json
+
+
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
       with:
         name: Tenjin-LLVM-${{ runner.os }}-${{ runner.arch }}-${{ inputs.release-version }}
@@ -202,4 +205,5 @@ jobs:
           ${{ needs.prepare.outputs.release-binary-filename }}
           libcxx/
           dota/
+          git-src.json
 
