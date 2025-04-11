@@ -94,5 +94,6 @@ set_final_stage_var(LLVM_DYLIB_EXPORT_ALL "ON" BOOL)
 set_final_stage_var(CPACK_GENERATOR "TXZ" STRING)
 set_final_stage_var(CPACK_ARCHIVE_THREADS "0" STRING)
 
-set_final_stage_var(LLVM_ENABLE_ZLIB "OFF" BOOL)
+set_final_stage_var(LLVM_ENABLE_ZLIB "OFF" STRING)
+set_final_stage_var(LLVM_ENABLE_LIBXML2 "OFF" STRING)
 set_final_stage_var(LLVM_USE_STATIC_ZSTD "ON" BOOL)
