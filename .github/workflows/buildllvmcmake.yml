@@ -61,7 +61,7 @@ jobs:
     - name: Install Dependencies
       shell: bash
       run: |
-        pip install --require-hashes -r ./llvmproj/llvm/utils/git/requirements.txt
+        pip install -r ./llvmproj/llvm/utils/git/requirements.txt
 
     - name: Inspect cwd again
       shell: bash
