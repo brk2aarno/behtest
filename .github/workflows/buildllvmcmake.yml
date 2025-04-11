@@ -135,10 +135,10 @@ jobs:
         clean: false
         fetch-depth: 1
 
-    - name: Build Clang
-      id: build
+    - name: Configure Clang
       shell: bash
       run: |
+        mkdir libcxx
         # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
         # so we need to set some extra cmake flags to disable this.
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build \
@@ -146,13 +146,24 @@ jobs:
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -C BuildClangTenjinRelease.cmake \
             -DBOOTSTRAP_CPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
+            -DBOOTSTRAP_CMAKE_INSTALL_PREFIX=$PWD/libcxx  
             -DBOOTSTRAP_LLVM_PARALLEL_LINK_JOBS=1
-            #-DLLVM_ENABLE_LIBXML2=OFF \
             #-DLLVM_ENABLE_CURL=OFF \
             #-DLLVM_ENABLE_HTTPLIB=OFF \
             #-DLLVM_ENABLE_TERMINFO=OFF \
+        ls libcxx
             
+    - name: Build Clang
+      shell: bash
+      run: |
         ninja -v -C llvmproj/_build stage2-package
+
+    - name: Install libcxx
+      shell: bash
+      run: |
+        ls libcxx
+        ninja -v -C llvmproj/_build stage2-install-cxx stage2-install-cxxabi stage2-install-unwind
+        ls libcxx
 
     - name: Prep Package
       shell: bash
@@ -165,6 +176,22 @@ jobs:
         release_dir=`find llvmproj/_build -iname stage2-bins`
         mv $release_dir/${{ needs.prepare.outputs.release-binary-filename }} .
         ls ${{ needs.prepare.outputs.release-binary-filename }}
+        ls libcxx
+
+        # The .a files that feed in to libLLVM and libClang are huge and we don't need them!
+        # But CMake will barf if they are missing, so we'll replace them with empty files.
+        mkdir dota
+        tar xf ${{ needs.prepare.outputs.release-binary-filename }}
+        ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
+        rm     ${{ needs.prepare.outputs.release-binary-filename }}
+        for x in `ls ${{ needs.prepare.outputs.release-binary-basename }}/lib/*.a`; do
+          mv $x libcxx/
+          touch $x
+        done
+        XZ_OPT=-9 tar caf \
+               ${{ needs.prepare.outputs.release-binary-filename }} \
+               ${{ needs.prepare.outputs.release-binary-basename }}
+        ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
       with:
@@ -173,4 +200,6 @@ jobs:
         # we need to search for files in the current workspace.
         path: |
           ${{ needs.prepare.outputs.release-binary-filename }}
+          libcxx/
+          dota/
 
