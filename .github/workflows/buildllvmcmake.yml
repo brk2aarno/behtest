@@ -162,7 +162,7 @@ jobs:
       shell: bash
       run: |
         ls libcxx
-        ninja -v -C llvmproj/_build stage2-install-cxx stage2-install-cxxabi stage2-install-unwind
+        ninja -v -C llvmproj/_build stage2-install-runtimes
         ls libcxx
 
     - name: Prep Package

@@ -30,7 +30,7 @@ set(LLVM_RELEASE_ENABLE_PROJECTS ${DEFAULT_PROJECTS} CACHE STRING "")
 # Note we don't need to add install here, since it is one of the pre-defined
 # steps.
 set(LLVM_RELEASE_FINAL_STAGE_TARGETS
-  "clang;package;check-all;check-llvm;check-clang;install-cxx;install-cxxabi;install-unwind" CACHE STRING "")
+  "clang;package;check-all;check-llvm;check-clang;install-runtimes" CACHE STRING "")
 set(CMAKE_BUILD_TYPE RELEASE CACHE STRING "")
 
 # Stage 1 Options
