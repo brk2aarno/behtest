@@ -106,4 +106,6 @@ set_final_stage_var(CLANG_ENABLE_ARCMT "OFF" BOOL)
 # thus making it easier to reproduce the final build.
 set_final_stage_var(LLVM_USE_RELATIVE_PATHS_IN_FILES "ON" BOOL)
 
+set_final_stage_var(DEFAULT_SYSROOT "../clickhouse-sysroot" STRING)
+
 set_final_stage_var(CLANG_VENDOR "Tenjin" STRING)
