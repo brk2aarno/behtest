@@ -206,17 +206,17 @@ jobs:
           touch $x
         done
         echo '-fuse-ld=lld --rtlib=compiler-rt' > ${{ needs.prepare.outputs.release-binary-basename }}/bin/clang.cfg
+        git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > ${{ needs.prepare.outputs.release-binary-basename }}/git-src.json
         XZ_OPT=-9 tar caf \
                ${{ needs.prepare.outputs.release-binary-filename }} \
                ${{ needs.prepare.outputs.release-binary-basename }}
         ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
 
-        git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > git-src.json
 
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
       with:
-        name: Tenjin-LLVM-${{ runner.os }}-${{ runner.arch }}-${{ inputs.release-version }}
+        name: Tenjin-LLVM-${{ runner.os }}-${{ runner.arch }}-${{ inputs.release-version }}-nodefaultsysroot
         # Due to path differences on Windows when running in bash vs running on node,
         # we need to search for files in the current workspace.
         path: |
@@ -224,5 +224,4 @@ jobs:
           libcxx/
           dota/
           clickhouse-sysroot/
-          git-src.json
 
