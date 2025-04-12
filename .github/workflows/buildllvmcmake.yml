@@ -150,10 +150,26 @@ jobs:
             -DBOOTSTRAP_LLVM_PARALLEL_LINK_JOBS=1
             #-DLLVM_ENABLE_CURL=OFF \
             #-DLLVM_ENABLE_HTTPLIB=OFF \
-            #-DLLVM_ENABLE_TERMINFO=OFF \
         ls -l libcxx
             
-    - name: Build Clang
+    - name: Build Clang (only)
+      shell: bash
+      run: |
+        # We build clang with a relative path for default sysroot (in stage 2),
+        # and so must provide a suitable sysroot for the runtimes compilation,
+        # which occurs during the stage2-package step.
+        wget https://images.aarno-labs.com/amp/ben/sysroots/clickhouse-sysroot-x86_64-linux.tar.xz
+        tar xf clickhouse-sysroot-x86_64-linux.tar.xz
+        cp -r clickhouse-sysroot llvmproj/_build/
+
+        ninja -v -C llvmproj/_build stage2-clang
+
+        # I'm not sure where it needs to go to get picked up for the next part so let's put it in both...
+        release_dir=`find llvmproj/_build -iname stage2-bins`
+        cp -r clickhouse-sysroot $release_dir
+
+
+    - name: Build Clang (package)
       shell: bash
       run: |
         ninja -v -C llvmproj/_build stage2-package
@@ -161,14 +177,6 @@ jobs:
     - name: Install libcxx
       shell: bash
       run: |
-        # We built clang with a relative path for default sysroot,
-        # so we need to provide a suitable sysroot for the runtimes compilation
-        wget https://images.aarno-labs.com/amp/ben/sysroots/clickhouse-sysroot-x86_64-linux.tar.xz
-        tar xf clickhouse-sysroot-x86_64-linux.tar.xz
-        release_dir=`find llvmproj/_build -iname stage2-bins`
-        # I'm not sure where it needs to go to get picked up so let's put it in both...
-        cp -r clickhouse-sysroot llvmproj/_build/
-        cp -r clickhouse-sysroot $release_dir
 
         ls -l libcxx
         ninja -v -C llvmproj/_build stage2-install-runtimes
@@ -194,7 +202,7 @@ jobs:
         ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
         rm     ${{ needs.prepare.outputs.release-binary-filename }}
         for x in `ls ${{ needs.prepare.outputs.release-binary-basename }}/lib/*.a`; do
-          mv $x libcxx/
+          mv $x dota/
           touch $x
         done
         echo '-fuse-ld=lld --rtlib=compiler-rt' > ${{ needs.prepare.outputs.release-binary-basename }}/bin/clang.cfg
@@ -215,5 +223,6 @@ jobs:
           ${{ needs.prepare.outputs.release-binary-filename }}
           libcxx/
           dota/
+          clickhouse-sysroot/
           git-src.json
 
