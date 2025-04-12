@@ -95,7 +95,7 @@ set_final_stage_var(LLVM_DYLIB_EXPORT_ALL "ON" BOOL)
 set_final_stage_var(CPACK_GENERATOR "TXZ" STRING)
 set_final_stage_var(CPACK_ARCHIVE_THREADS "0" STRING)
 
-set_final_stage_var(CLANG_DEFAULT_CXX_STDLIB "libc++" STRING)
+#set_final_stage_var(CLANG_DEFAULT_CXX_STDLIB "libc++" STRING)
 
 set_final_stage_var(LLVM_ENABLE_ZLIB "OFF" STRING)
 set_final_stage_var(LLVM_ENABLE_LIBXML2 "OFF" STRING)
@@ -109,6 +109,6 @@ set_final_stage_var(CLANG_ENABLE_ARCMT "OFF" BOOL)
 # thus making it easier to reproduce the final build.
 set_final_stage_var(LLVM_USE_RELATIVE_PATHS_IN_FILES "ON" BOOL)
 
-set_final_stage_var(DEFAULT_SYSROOT "../clickhouse-sysroot" STRING)
+#set_final_stage_var(DEFAULT_SYSROOT "../clickhouse-sysroot" STRING)
 
 set_final_stage_var(CLANG_VENDOR "Tenjin" STRING)
