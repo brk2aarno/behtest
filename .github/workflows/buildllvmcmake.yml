@@ -216,7 +216,7 @@ jobs:
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
       with:
-        name: Tenjin-LLVM-${{ runner.os }}-${{ runner.arch }}-${{ inputs.release-version }}-nodefaultsysroot
+        name: Tenjin-LLVM-${{ runner.os }}-${{ runner.arch }}-${{ inputs.release-version }}-withdefaultsysroot
         # Due to path differences on Windows when running in bash vs running on node,
         # we need to search for files in the current workspace.
         path: |
