@@ -5,6 +5,13 @@ function (set_final_stage_var name value type)
   set(BOOTSTRAP_${name} ${value} CACHE ${type} "")
 endfunction()
 
+function (set_both_stage_var name value type)
+  # This sets the varaible for the final stage in non-PGO builds and in
+  # the stage2-instrumented stage for PGO builds.
+  set(${name} ${value} CACHE ${type} "")
+  set(BOOTSTRAP_${name} ${value} CACHE ${type} "")
+endfunction()
+
 function (set_instrument_and_final_stage_var name value type)
   # This sets the varaible for the final stage in non-PGO builds and in
   # the stage2-instrumented stage for PGO builds.
@@ -51,20 +58,23 @@ set(BOOTSTRAP_LLVM_ENABLE_RUNTIMES "compiler-rt" CACHE STRING "")
 set(BOOTSTRAP_LLVM_ENABLE_PROJECTS "clang;lld" CACHE STRING "")
 
 set(RUNTIMES_CMAKE_ARGS "-DLLVM_ENABLE_LLD=ON" CACHE STRING "")
+set(BOOTSTRAP_RUNTIMES_CMAKE_ARGS "-DLLVM_ENABLE_LLD=ON" CACHE STRING "")
 
 # Stage 1 Common Config
 set(LLVM_ENABLE_RUNTIMES ${STAGE1_RUNTIMES} CACHE STRING "")
 set(LLVM_ENABLE_PROJECTS ${STAGE1_PROJECTS} CACHE STRING "")
+
 set(LIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY ON CACHE STRING "")
+set(BOOTSTRAP_LIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY ON CACHE STRING "")
 
 # stage2-instrumented and Final Stage Config:
 # Options that need to be set in both the instrumented stage (if we are doing
 # a pgo build) and the final stage.
 set_instrument_and_final_stage_var(CMAKE_POSITION_INDEPENDENT_CODE "ON" STRING)
 #set_instrument_and_final_stage_var(LLVM_ENABLE_LTO "${LLVM_RELEASE_ENABLE_LTO}" STRING)
-set_instrument_and_final_stage_var(LLVM_ENABLE_LLD "ON" BOOL)
-set_instrument_and_final_stage_var(LLVM_ENABLE_LIBCXX "ON" BOOL)
-set_instrument_and_final_stage_var(LLVM_STATIC_LINK_CXX_STDLIB "ON" BOOL)
+set_both_stage_var(LLVM_ENABLE_LLD "ON" BOOL)
+set_both_stage_var(LLVM_ENABLE_LIBCXX "ON" BOOL)
+set_both_stage_var(LLVM_STATIC_LINK_CXX_STDLIB "ON" BOOL)
 set(RELEASE_LINKER_FLAGS "-rtlib=compiler-rt --unwindlib=libunwind")
 if(NOT ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
   set(RELEASE_LINKER_FLAGS "${RELEASE_LINKER_FLAGS} -static-libgcc")
