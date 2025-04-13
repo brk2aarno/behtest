@@ -144,7 +144,7 @@ jobs:
     - name: Configure Clang
       shell: bash
       run: |
-        sed -i.bak 's/check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)//' llvmproj/libcxx/cmake/config-ix.cmake && rm libcxx/cmake/config-ix.cmake.bak
+        sed -i.bak 's/check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)//' llvmproj/libcxx/cmake/config-ix.cmake && rm llvmproj/libcxx/cmake/config-ix.cmake.bak
 
         mkdir libcxx
         # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
