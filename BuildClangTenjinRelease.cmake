@@ -97,7 +97,7 @@ set_final_stage_var(CPACK_ARCHIVE_THREADS "0" STRING)
 
 set_final_stage_var(CLANG_DEFAULT_CXX_STDLIB "libc++" STRING)
 set_final_stage_var(CLANG_DEFAULT_LINKER "lld" STRING)
-set_final_stage_var(CLANG_DEFAULT_RUNTIME "compiler-rt" STRING)
+set_final_stage_var(CLANG_DEFAULT_RTLIB "compiler-rt" STRING)
 set_final_stage_var(CLANG_DEFAULT_UNWINDLIB "libunwind" STRING)
 
 set_final_stage_var(LLVM_ENABLE_ZLIB "OFF" STRING)
