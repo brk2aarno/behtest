@@ -144,15 +144,13 @@ jobs:
     - name: Configure Clang
       shell: bash
       run: |
-        #sed -i.bak 's/check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)//' llvmproj/libcxx/cmake/config-ix.cmake && rm llvmproj/libcxx/cmake/config-ix.cmake.bak
+        sed -i.bak 's/check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)//' llvmproj/libcxx/cmake/config-ix.cmake && rm llvmproj/libcxx/cmake/config-ix.cmake.bak
 
         mkdir libcxx
         # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
         # so we need to set some extra cmake flags to disable this.
         cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
-            -DCMAKE_C_COMPILER=clang \
-            -DCMAKE_CXX_COMPILER=clang++ \
             -DLLVM_PARALLEL_LINK_JOBS=1 \
             -C BuildClangTenjinRelease.cmake \
             -DBOOTSTRAP_CPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
