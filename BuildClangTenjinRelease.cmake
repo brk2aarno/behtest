@@ -95,20 +95,29 @@ set_final_stage_var(LLVM_DYLIB_EXPORT_ALL "ON" BOOL)
 set_final_stage_var(CPACK_GENERATOR "TXZ" STRING)
 set_final_stage_var(CPACK_ARCHIVE_THREADS "0" STRING)
 
-#set_final_stage_var(CLANG_DEFAULT_CXX_STDLIB "libc++" STRING)
+set_final_stage_var(CLANG_DEFAULT_CXX_STDLIB "libc++" STRING)
+set_final_stage_var(CLANG_DEFAULT_LINKER "lld" STRING)
+set_final_stage_var(CLANG_DEFAULT_RUNTIME "compiler-rt" STRING)
+set_final_stage_var(CLANG_DEFAULT_UNWINDLIB "libunwind" STRING)
 
 set_final_stage_var(LLVM_ENABLE_ZLIB "OFF" STRING)
 set_final_stage_var(LLVM_ENABLE_LIBXML2 "OFF" STRING)
 set_final_stage_var(LLVM_ENABLE_TERMINFO "OFF" STRING)
 set_final_stage_var(LLVM_USE_STATIC_ZSTD "ON" BOOL)
 
+set_final_stage_var(LLVM_ABI_BREAKING_CHECKS "FORCE_OFF" STRING)
+
 # Just one less thing to build
+
 set_final_stage_var(CLANG_ENABLE_ARCMT "OFF" BOOL)
+
+set_final_stage_var(COMPILER_RT_BUILD_XRAY "OFF" BOOL)
+set_final_stage_var(COMPILER_RT_BUILD_ORC "OFF" BOOL)
 
 # This is to avoid having builder machine paths leak,
 # thus making it easier to reproduce the final build.
 set_final_stage_var(LLVM_USE_RELATIVE_PATHS_IN_FILES "ON" BOOL)
 
-#set_final_stage_var(DEFAULT_SYSROOT "../clickhouse-sysroot" STRING)
+set_final_stage_var(DEFAULT_SYSROOT "../clickhouse-sysroot" STRING)
 
 set_final_stage_var(CLANG_VENDOR "Tenjin" STRING)
