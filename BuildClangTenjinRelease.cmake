@@ -117,6 +117,18 @@ set_final_stage_var(LLVM_USE_STATIC_ZSTD "ON" BOOL)
 
 set_final_stage_var(LLVM_ABI_BREAKING_CHECKS "FORCE_OFF" STRING)
 
+set_final_stage_var(COMPILER_RT_BUILD_BUILTINS "ON" BOOL)
+set_final_stage_var(COMPILER_RT_USE_BUILTINS_LIBRARY "ON" BOOL)
+set_final_stage_var(COMPILER_RT_DEFAULT_TARGET_ONLY "ON" BOOL)
+set_final_stage_var(LIBUNWIND_ENABLE_SHARED "OFF" BOOL)
+set_final_stage_var(LIBUNWIND_USE_COMPILER_RT "ON" BOOL)
+set_final_stage_var(LIBCXXABI_USE_COMPILER_RT "ON" BOOL)
+set_final_stage_var(LIBCXXABI_USE_LLVM_UNWINDER "ON" BOOL)
+set_final_stage_var(LIBCXX_USE_COMPILER_RT "ON" BOOL)
+set_final_stage_var(LIBCXX_ENABLE_STATIC_ABI_LIBRARY "ON" BOOL)
+set_final_stage_var(LIBCXXABI_ENABLE_NEW_DELETE_DEFINITIONS "ON" BOOL)
+set_final_stage_var(LIBCXX_ENABLE_NEW_DELETE_DEFINITIONS "OFF" BOOL)
+
 # Disable building things we won't need
 set_final_stage_var(CLANG_ENABLE_ARCMT "OFF" BOOL)
 
