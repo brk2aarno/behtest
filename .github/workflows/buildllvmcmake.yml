@@ -209,14 +209,26 @@ jobs:
 
         
         # The .a files that feed in to libLLVM and libClang are huge and we don't need them!
-        # But CMake will barf if they are missing, so we'll replace them with empty files.
+        # But CMake & llvm-config will barf if they are missing, so we'll replace them with empty files.
         mkdir dota
         tar xf ${{ needs.prepare.outputs.release-binary-filename }}
         ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
         rm     ${{ needs.prepare.outputs.release-binary-filename }}
 
-        cp -a ${{ needs.prepare.outputs.release-binary-basename }}/lib/libunw* clickhouse-sysroot/lib
-        cp -a ${{ needs.prepare.outputs.release-binary-basename }}/lib/libc++* clickhouse-sysroot/lib
+        # Compute an initial tree hash, without clickhouse-sysroot or clang*.cfg (and with libLLVM*.a)
+        cd ${{ needs.prepare.outputs.release-binary-basename }}
+        git init .
+        git add .
+        git commit -m .
+        intial_treehash=$(git log -n1 --pretty='%T')
+        cd ..
+
+        echo '-----------------'
+        ls -lh ${{ needs.prepare.outputs.release-binary-basename }}/*
+        echo '-----------------'
+
+        cp -a ${{ needs.prepare.outputs.release-binary-basename }}/lib/libunw* clickhouse-sysroot/lib || true
+        cp -a ${{ needs.prepare.outputs.release-binary-basename }}/lib/libc++* clickhouse-sysroot/lib || true
 
         for x in `ls ${{ needs.prepare.outputs.release-binary-basename }}/lib/libLLVM*.a`; do
           mv $x dota/
@@ -230,6 +242,16 @@ jobs:
         echo '--sysroot clickhouse-sysroot' > ${{ needs.prepare.outputs.release-binary-basename }}/bin/clang.cfg
         echo '--sysroot clickhouse-sysroot -static-libstdc++ -l:libunwind.a -Wno-unused-command-line-argument' > ${{ needs.prepare.outputs.release-binary-basename }}/bin/clang++.cfg
         mv clickhouse-sysroot ${{ needs.prepare.outputs.release-binary-basename }}/
+
+        # Compute a final tree hash, with clickhouse-sysroot and clang*.cfg (and without libLLVM*.a)
+        cd ${{ needs.prepare.outputs.release-binary-basename }}
+        git add .
+        git commit -m .
+        final_treehash=$(git log -n1 --pretty='%T')
+        rm -rf .git
+        cd ..
+
+        jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json
 
         git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > ${{ needs.prepare.outputs.release-binary-basename }}/git-src.json
         XZ_OPT=-9 tar caf \
@@ -247,5 +269,6 @@ jobs:
         #clickhouse-sysroot/
         path: |
           ${{ needs.prepare.outputs.release-binary-filename }}
+          tarball-treehashes.json
           dota/
 
