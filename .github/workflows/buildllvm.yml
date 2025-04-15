@@ -114,6 +114,9 @@ jobs:
     - name: Install Ninja
       uses: llvm/actions/install-ninja@22e9f909d35b50bd1181709564bfe816eaeaae81 # main
 
+    - name: Checkout builder repo
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
     - name: Checkout LLVM
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       with:
@@ -122,6 +125,14 @@ jobs:
         path: 'llvmproj'
         clean: false
         fetch-depth: 1
+
+    - name: Disable llvm-exegesis
+      id: build
+      shell: bash
+      run: |
+        rm -rf llvmproj/llvm/tools/llvm-exegesis
+        sed -i.bak 's/llvm-exegesis//' llvmproj/llvm/unittests/tools/CMakeLists.txt
+        rm llvmproj/llvm/unittests/tools/llvm-exegesis/CMakeLists.txt
 
     - name: Build Clang
       id: build
@@ -188,6 +199,7 @@ jobs:
         intial_treehash=$(git log -n1 --pretty='%T')
         cd ..
 
+        echo "initial treehash: $initial_treehash"
         echo '-----------------'
         ls -lh ${{ needs.prepare.outputs.release-binary-basename }}/*
         echo '-----------------'
@@ -208,14 +220,24 @@ jobs:
         ls -al
         echo '==============='
 
-        # git add .
-        # git commit -m .
-        # final_treehash=$(git log -n1 --pretty='%T')
-        # rm -rf .git
+        pwd
+        echo 'doing git add .'
+        git add .
+        echo 'doing git commit -m .'
+        git commit -m .
+        echo 'doing git log treehash'
+        final_treehash=$(git log -n1 --pretty='%T')
+        echo "final treehash: $final_treehash"
+        echo 'removing .git directory'
+        rm -rf .git
         cd ..
 
-        #jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json
-        jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash > tarball-treehashes.json
+        (jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json) || touch tarball-treehashes.json
+
+        #jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash > tarball-treehashes.json
+
+        pwd
+        echo 'computing git-src.json'
 
         git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > ${{ needs.prepare.outputs.release-binary-basename }}/git-src.json
         XZ_OPT=-9 tar caf \
