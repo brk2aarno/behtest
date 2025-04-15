@@ -156,6 +156,10 @@ jobs:
         # to help debug that when it happens.
         ls -ltr llvmproj/_build
 
+    - name: Build Clang (package)
+      shell: bash
+      run: |
+        ninja -v -C llvmproj/_build package
 
     - name: Prep Package
       shell: bash
