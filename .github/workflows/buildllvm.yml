@@ -203,13 +203,19 @@ jobs:
 
         # Compute a final tree hash, without the contents of libLLVM*.a and libclang*.a
         cd ${{ needs.prepare.outputs.release-binary-basename }}
-        git add .
-        git commit -m .
-        final_treehash=$(git log -n1 --pretty='%T')
-        rm -rf .git
+        pwd
+        echo '==============='
+        ls -al
+        echo '==============='
+
+        # git add .
+        # git commit -m .
+        # final_treehash=$(git log -n1 --pretty='%T')
+        # rm -rf .git
         cd ..
 
-        jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json
+        #jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json
+        jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash > tarball-treehashes.json
 
         git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > ${{ needs.prepare.outputs.release-binary-basename }}/git-src.json
         XZ_OPT=-9 tar caf \
@@ -225,6 +231,8 @@ jobs:
         # we need to search for files in the current workspace.
         path: |
           ${{ needs.prepare.outputs.release-binary-filename }}
+          tarball-treehashes.json
+          dota
 
 
 
