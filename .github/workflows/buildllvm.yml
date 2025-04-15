@@ -15,7 +15,6 @@ on:
         required: true
         type: choice
         options:
-          - ubuntu-20.04
           - ubuntu-22.04
           - ubuntu-22.04-arm
           - macos-13 # x86_64
@@ -129,9 +128,10 @@ jobs:
     - name: Disable llvm-exegesis
       shell: bash
       run: |
-        rm -rf llvmproj/llvm/tools/llvm-exegesis
-        sed -i.bak 's/llvm-exegesis//' llvmproj/llvm/unittests/tools/CMakeLists.txt
-        rm llvmproj/llvm/unittests/tools/llvm-exegesis/CMakeLists.txt
+        #rm -rf llvmproj/llvm/tools/llvm-exegesis
+        #sed -i.bak 's/llvm-exegesis//' llvmproj/llvm/unittests/tools/CMakeLists.txt
+        #rm llvmproj/llvm/unittests/tools/llvm-exegesis/CMakeLists.txt
+        echo '...eventually...'
 
     - name: Build Clang
       id: build
@@ -211,6 +211,8 @@ jobs:
           mv $x dota/
           touch $x
         done
+
+        rm ${{ needs.prepare.outputs.release-binary-basename }}/bin/llvm-exegesis
 
         # Compute a final tree hash, without the contents of libLLVM*.a and libclang*.a
         cd ${{ needs.prepare.outputs.release-binary-basename }}
