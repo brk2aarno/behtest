@@ -218,6 +218,8 @@ jobs:
         # Compute an initial tree hash, without clickhouse-sysroot or clang*.cfg (and with libLLVM*.a)
         cd ${{ needs.prepare.outputs.release-binary-basename }}
         git init .
+        git config user.email "b.tenjin@qt.fyi"
+        git config user.name "tenjinbot"
         git add .
         git commit -m .
         intial_treehash=$(git log -n1 --pretty='%T')
