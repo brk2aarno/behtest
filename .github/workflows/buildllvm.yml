@@ -127,7 +127,6 @@ jobs:
         fetch-depth: 1
 
     - name: Disable llvm-exegesis
-      id: build
       shell: bash
       run: |
         rm -rf llvmproj/llvm/tools/llvm-exegesis
