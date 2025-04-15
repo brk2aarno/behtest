@@ -215,7 +215,6 @@ jobs:
           touch $x
         done
 
-        rm    ${{ needs.prepare.outputs.release-binary-basename }}/bin/llvm-exegesis
         touch ${{ needs.prepare.outputs.release-binary-basename }}/bin/llvm-exegesis
 
         # Compute a final tree hash, without the contents of libLLVM*.a and libclang*.a
