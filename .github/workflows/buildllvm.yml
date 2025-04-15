@@ -15,6 +15,7 @@ on:
         required: true
         type: choice
         options:
+          - ubuntu-20.04
           - ubuntu-22.04
           - ubuntu-22.04-arm
           - macos-13 # x86_64
@@ -62,7 +63,6 @@ jobs:
       shell: bash
       run: |
         pip install --require-hashes -r ./llvmproj/llvm/utils/git/requirements.txt
-
     - name: Inspect cwd again
       shell: bash
       run: ls -lh
@@ -75,18 +75,14 @@ jobs:
         release_version="$trimmed"
         ref="llvmorg-$release_version"
         upload="false"
-
         echo "release-version=$release_version">> $GITHUB_OUTPUT
         echo "ref=$ref" >> $GITHUB_OUTPUT
         echo "upload=$upload" >> $GITHUB_OUTPUT
-
         # Detect necessary CMake flags
         target=$(python3 print_os_arch.py)
-
         release_binary_basename="LLVM-$release_version-$target"
         echo "release-binary-basename=$release_binary_basename" >> $GITHUB_OUTPUT
         echo "release-binary-filename=$release_binary_basename.tar.xz" >> $GITHUB_OUTPUT
-
         echo "enable-pgo=false" >> $GITHUB_OUTPUT
         target_cmake_flags="-DLLVM_RELEASE_ENABLE_PGO=OFF"
         # The macOS builds try to cross compile some libraries so we need to
@@ -101,17 +97,13 @@ jobs:
           fi
           target_cmake_flags="$target_cmake_flags -DDARWIN_osx_ARCHS=$arches -DDARWIN_osx_BUILTIN_ARCHS=$arches"
         fi
-
         build_flang="false"
-
         if [ "${{ runner.os }}" = "Windows" ]; then
           # The build times out on Windows, so we need to disable LTO.
           target_cmake_flags="$target_cmake_flags -DLLVM_RELEASE_ENABLE_LTO=OFF"
         fi
-
         echo "target-cmake-flags=$target_cmake_flags" >> $GITHUB_OUTPUT
         echo "build-flang=$build_flang" >> $GITHUB_OUTPUT
-
         
   build-llvm-clang:
     name: "Build LLVM and Clang"
@@ -122,11 +114,6 @@ jobs:
     - name: Install Ninja
       uses: llvm/actions/install-ninja@22e9f909d35b50bd1181709564bfe816eaeaae81 # main
 
-    - name: Install mold
-      uses: rui314/setup-mold@v1
-      with:
-        make-default: false  # /usr/local/bin/mold
-        
     - name: Checkout LLVM
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       with:
@@ -136,67 +123,15 @@ jobs:
         clean: false
         fetch-depth: 1
 
-    - name: Build Clang (stage 1)
-      id: build-stage1
+    - name: Build Clang
+      id: build
       shell: bash
       run: |
         # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
         # so we need to set some extra cmake flags to disable this.
-        cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build_stage1 \
+        cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build \
             ${{ needs.prepare.outputs.target-cmake-flags }} \
-            -DCPACK_PACKAGE_FILE_NAME="stage1_${{ needs.prepare.outputs.release-binary-basename }}" \
-            -DLLVM_PARALLEL_LINK_JOBS=1 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DLLVM_TARGETS_TO_BUILD=host \
-            -DLLVM_ENABLE_ZSTD=OFF \
-            -DLLVM_ENABLE_LIBXML2=OFF \
-            -DLLVM_ENABLE_CURL=OFF \
-            -DLLVM_ENABLE_HTTPLIB=OFF \
-            -DLLVM_ENABLE_TERMINFO=OFF \
-            -DLLVM_ENABLE_PROJECTS="llvm;clang;lld" \
-            -DLLVM_ENABLE_RUNTIMES="compiler-rt" \
-            -DLLVM_USE_LINKER=mold \
-            -DCPACK_GENERATOR=TXZ \
-            -DCPACK_ARCHIVE_THREADS=0
-            
-        ninja -v -C llvmproj/_build_stage1
-        # There is a race condition on the MacOS builders and this command is here
-        # to help debug that when it happens.
-        ls -ltr llvmproj/_build_stage1
-
-    - name: Build stage1 Package
-      shell: bash
-      run: |
-        ninja -C llvmproj/_build_stage1 package
-
-        # Copy Release artifact to the workspace so it is easier to upload.
-        # This is necessary, because on Windows, the build-prefix path can
-        # only be used on bash steps, because it uses the form of /d/files/
-        # and other steps expect D:\files.
-        mv llvmproj/_build_stage1/*.xz .
-        ls stage1_${{ needs.prepare.outputs.release-binary-filename }}
-
-    - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
-      with:
-        name: ${{ runner.os }}-${{ runner.arch }}-stage1-viazig
-        # Due to path differences on Windows when running in bash vs running on node,
-        # we need to search for files in the current workspace.
-        path: |
-          stage1_${{ needs.prepare.outputs.release-binary-filename }}
-
-    - name: Build Clang (stage 2)
-      id: build-stage2
-      shell: bash
-      run: |
-        # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
-        # so we need to set some extra cmake flags to disable this.
-        STAGE1BIN=$PWD/llvmproj/_build_stage1/bin
-        export PATH=$STAGE1BIN:$PATH
-        cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build_stage2 \
-            ${{ needs.prepare.outputs.target-cmake-flags }} \
-            -DCMAKE_C_COMPILER=$STAGE1BIN/clang \
-            -DCMAKE_CXX_COMPILER=$STAGE1BIN/clang++ \
-            -DLLVM_PARALLEL_LINK_JOBS=1 \
+            -DLLVM_PARALLEL_LINK_JOBS=2 \
             -DCPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DLLVM_TARGETS_TO_BUILD=host \
@@ -204,53 +139,88 @@ jobs:
             -DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF \
             -DLLVM_BUILD_LLVM_DYLIB=ON \
             -DLLVM_LINK_LLVM_DYLIB=ON \
-            -DLLVM_DYLIB_EXPORT_ALL=ON \
             -DLLVM_ENABLE_ZSTD=OFF \
             -DLLVM_ENABLE_LIBXML2=OFF \
             -DLLVM_ENABLE_CURL=OFF \
             -DLLVM_ENABLE_HTTPLIB=OFF \
             -DLLVM_ENABLE_TERMINFO=OFF \
-            -DLLVM_ENABLE_LIBCXX=ON \
-            -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
             -DLLVM_ENABLE_PROJECTS="llvm;clang;lld" \
-            -DLLVM_ENABLE_RUNTIMES="compiler-rt;libunwind;libcxx;libcxxabi" \
-            -DLLVM_ENABLE_LLD=ON \
-            -DCLANG_DEFAULT_UNWINDLIB=libunwind \
-            -DCLANG_DEFAULT_CXX_STDLIB=libcxx \
-            -DCLANG_DEFAULT_RTLIB=compiler-rt \
-            -DLIBUNWIND_USE_COMPILER_RT=YES \
-            -DLIBCXX_USE_COMPILER_RT=YES \
-            -DLIBCXXABI_USE_COMPILER_RT=YES \
-            -DLIBCXXABI_USE_LLVM_UNWINDER=YES \
-            -DCOMPILER_RT_CXX_LIBRARY=libcxx \
-            -DCOMPILER_RT_USE_ATOMIC_LIBRARY=ON \
-            -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON \
-            -DCOMPILER_RT_USE_LLVM_UNWINDER=ON \
+            -DLLVM_USE_RELATIVE_PATHS_IN_FILES=ON \
+            -DCLANG_DEFAULT_LINKER=lld \
+            -DCLANG_VENDOR=Tenjin \
             -DCPACK_GENERATOR=TXZ \
             -DCPACK_ARCHIVE_THREADS=0
-            
-        ninja -v -C llvmproj/_build_stage2
+
+        ninja -v -C llvmproj/_build
         # There is a race condition on the MacOS builders and this command is here
         # to help debug that when it happens.
-        ls -ltr llvmproj/_build_stage2
+        ls -ltr llvmproj/_build
 
-    - name: Build Release Package
+
+    - name: Prep Package
       shell: bash
       run: |
-        ninja -C llvmproj/_build_stage2 package
-
         # Copy Release artifact to the workspace so it is easier to upload.
         # This is necessary, because on Windows, the build-prefix path can
         # only be used on bash steps, because it uses the form of /d/files/
         # and other steps expect D:\files.
-        mv llvmproj/_build_stage2/*.xz .
-        ls ${{ needs.prepare.outputs.release-binary-filename }}
+
+        mv llvmproj/_build/*.xz .
+        ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
+        
+        # The .a files that feed in to libLLVM and libClang are huge and we don't need them!
+        # But CMake & llvm-config will barf if they are missing, so we'll replace them with empty files.
+        mkdir dota
+        tar xf ${{ needs.prepare.outputs.release-binary-filename }}
+        rm     ${{ needs.prepare.outputs.release-binary-filename }}
+
+        # Compute an initial tree hash
+        cd ${{ needs.prepare.outputs.release-binary-basename }}
+        git init .
+        git config user.email "b.tenjin@qt.fyi"
+        git config user.name "tenjinbot"
+        git add .
+        git commit -m .
+        intial_treehash=$(git log -n1 --pretty='%T')
+        cd ..
+
+        echo '-----------------'
+        ls -lh ${{ needs.prepare.outputs.release-binary-basename }}/*
+        echo '-----------------'
+
+        for x in `ls ${{ needs.prepare.outputs.release-binary-basename }}/lib/libLLVM*.a`; do
+          mv $x dota/
+          touch $x
+        done
+        for x in `ls ${{ needs.prepare.outputs.release-binary-basename }}/lib/libclang*.a`; do
+          mv $x dota/
+          touch $x
+        done
+
+        # Compute a final tree hash, without the contents of libLLVM*.a and libclang*.a
+        cd ${{ needs.prepare.outputs.release-binary-basename }}
+        git add .
+        git commit -m .
+        final_treehash=$(git log -n1 --pretty='%T')
+        rm -rf .git
+        cd ..
+
+        jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json
+
+        git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > ${{ needs.prepare.outputs.release-binary-basename }}/git-src.json
+        XZ_OPT=-9 tar caf \
+               ${{ needs.prepare.outputs.release-binary-filename }} \
+               ${{ needs.prepare.outputs.release-binary-basename }}
+        ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
+
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
       with:
-        name: ${{ runner.os }}-${{ runner.arch }}-release-viazig
+        name: ${{ runner.os }}-${{ runner.arch }}-release-binary
         # Due to path differences on Windows when running in bash vs running on node,
         # we need to search for files in the current workspace.
         path: |
           ${{ needs.prepare.outputs.release-binary-filename }}
+
+
 
