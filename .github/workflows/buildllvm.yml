@@ -191,13 +191,16 @@ jobs:
         git init .
         git config user.email "b.tenjin@qt.fyi"
         git config user.name "tenjinbot"
+        git commit --allow-empty -m .
         git add .
-        git commit -m .
-        git log -n1 || true
-        sleep 2
-        git log -n1 || true
+        git commit -m . | wc -l
+        git log || true
         sleep 2
         git status || true
+        echo 'git log H:'
+        git log -n1 --pretty='%H' || (echo 'git log H failed' ; true)
+        echo 'git log T:'
+        git log -n1 --pretty='%T' || (echo 'git log T failed' ; true)
         intial_treehash=$(git log -n1 --pretty='%T')
         cd ..
 
@@ -228,7 +231,7 @@ jobs:
         echo 'doing git add .'
         git add .
         echo 'doing git commit -m .'
-        git commit -m .
+        git commit -m . | wc -l
         echo 'doing git log treehash'
         final_treehash=$(git log -n1 --pretty='%T')
         echo "final treehash: $final_treehash"
