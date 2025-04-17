@@ -221,8 +221,17 @@ jobs:
         git config user.email "b.tenjin@qt.fyi"
         git config user.name "tenjinbot"
         git add .
-        git commit -m .
+        git commit -m . | wc -l
+
+        git log || true
+        sleep 2
+        git status || true
+        echo 'git log H:'
+        git log -n1 --pretty='%H' || (echo 'git log H failed' ; true)
+        echo 'git log T:'
+        git log -n1 --pretty='%T' || (echo 'git log T failed' ; true)
         intial_treehash=$(git log -n1 --pretty='%T')
+
         cd ..
 
         echo '-----------------'
@@ -241,19 +250,21 @@ jobs:
           touch $x
         done
 
-        echo '--sysroot clickhouse-sysroot' > ${{ needs.prepare.outputs.release-binary-basename }}/bin/clang.cfg
-        echo '--sysroot clickhouse-sysroot -static-libstdc++ -l:libunwind.a -Wno-unused-command-line-argument' > ${{ needs.prepare.outputs.release-binary-basename }}/bin/clang++.cfg
+        echo '--sysroot <CFGDIR>/../clickhouse-sysroot' > ${{ needs.prepare.outputs.release-binary-basename }}/bin/clang.cfg
+        #echo '--sysroot <CFGDIR>/../clickhouse-sysroot -static-libstdc++ -l:libunwind.a -Wno-unused-command-line-argument' > ${{ needs.prepare.outputs.release-binary-basename }}/bin/clang++.cfg
+        echo '--sysroot <CFGDIR>/../clickhouse-sysroot -static-libstdc++' > ${{ needs.prepare.outputs.release-binary-basename }}/bin/clang++.cfg
         mv clickhouse-sysroot ${{ needs.prepare.outputs.release-binary-basename }}/
 
         # Compute a final tree hash, with clickhouse-sysroot and clang*.cfg (and without libLLVM*.a)
         cd ${{ needs.prepare.outputs.release-binary-basename }}
         git add .
-        git commit -m .
+        git commit -m . | wc -l
         final_treehash=$(git log -n1 --pretty='%T')
         rm -rf .git
         cd ..
 
-        jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json
+        #jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json
+        echo final treehash $final_treehash
 
         git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > ${{ needs.prepare.outputs.release-binary-basename }}/git-src.json
         XZ_OPT=-9 tar caf \
@@ -265,12 +276,11 @@ jobs:
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
       with:
-        name: Tenjin-LLVM-${{ runner.os }}-${{ runner.arch }}-${{ inputs.release-version }}-nodefaultsysroot-withdefaultcxxstdlib-built_on_${{ inputs.runs-on }}
+        name: Tenjin-LLVM-${{ runner.os }}-${{ runner.arch }}-${{ inputs.release-version }}-libunwinddyn-withdefaultcxxstdlib-built_on_${{ inputs.runs-on }}
         # Due to path differences on Windows when running in bash vs running on node,
         # we need to search for files in the current workspace.
         #clickhouse-sysroot/
         path: |
           ${{ needs.prepare.outputs.release-binary-filename }}
-          tarball-treehashes.json
           dota/
 
