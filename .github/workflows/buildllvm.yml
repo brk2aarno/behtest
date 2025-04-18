@@ -242,6 +242,9 @@ jobs:
         (jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json) || touch tarball-treehashes.json
 
         #jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash > tarball-treehashes.json
+        
+        echo 'tarball treehashes:'
+        cat   tarball-treehashes.json
 
         pwd
         echo 'computing git-src.json'
@@ -255,13 +258,18 @@ jobs:
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
       with:
-        name: ${{ runner.os }}-${{ runner.arch }}-release-binary
+        name: ${{ runner.os }}-${{ runner.arch }}-built_on_${{ inputs.runs-on }}
         # Due to path differences on Windows when running in bash vs running on node,
         # we need to search for files in the current workspace.
         path: |
           ${{ needs.prepare.outputs.release-binary-filename }}
           tarball-treehashes.json
-          dota
 
+    - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+      with:
+        name: dota_${{ runner.os }}-${{ runner.arch }}-built_on_${{ inputs.runs-on }}
+        path: |
+          tarball-treehashes.json
+          dota
 
 
