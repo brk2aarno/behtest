@@ -15,7 +15,6 @@ on:
         required: true
         type: choice
         options:
-          - ubuntu-20.04
           - ubuntu-22.04
           - ubuntu-22.04-arm
           - macos-13 # x86_64
@@ -264,6 +263,7 @@ jobs:
         cd ..
 
         #jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json
+        echo initial treehash $initial_treehash
         echo final treehash $final_treehash
 
         git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > ${{ needs.prepare.outputs.release-binary-basename }}/git-src.json
