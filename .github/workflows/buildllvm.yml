@@ -131,8 +131,7 @@ jobs:
         rm -rf llvmproj/llvm/tools/llvm-exegesis
         sed -i.bak 's/llvm-exegesis//' llvmproj/llvm/test/CMakeLists.txt
 
-    - name: Build Clang
-      id: build
+    - name: Configure Clang
       shell: bash
       run: |
         # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
@@ -159,10 +158,17 @@ jobs:
             -DCPACK_GENERATOR=TXZ \
             -DCPACK_ARCHIVE_THREADS=0
 
+    - name: Build Clang (natively)
+      shell: bash
+      if: ${{ ! startsWith(inputs.runs-on, 'ubuntu-') }}
+      run: |
         ninja -v -C llvmproj/_build
-        # There is a race condition on the MacOS builders and this command is here
-        # to help debug that when it happens.
-        ls -ltr llvmproj/_build
+
+    - name: Build Clang (in container)
+      if: ${{   startsWith(inputs.runs-on, 'ubuntu-') }}
+      uses: docker://ghcr.io/invasy/dev-env-clang:latest
+      run: |
+        ninja -v -C llvmproj/_build
 
     - name: Build Clang (package)
       shell: bash
