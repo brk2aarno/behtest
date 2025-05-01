@@ -22,4 +22,6 @@ cmake -G Ninja -S $LLVMROOT/llvm -B $LLVMROOT/_build \
             -DCLANG_VENDOR=Tenjin \
             -DCPACK_GENERATOR=TXZ \
             -DCPACK_ARCHIVE_THREADS=0
-
+ls -lh $LLVMROOT/_build
+ninja -v -C $LLVMROOT/_build
+ls -lh $LLVMROOT/_build
