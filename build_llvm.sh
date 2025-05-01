@@ -1,0 +1,25 @@
+LLVMROOT=$1
+TARGET_CMAKE_FLAGS=$2
+RELEASE_BINARY_BASENAME=$3
+cmake -G Ninja -S $LLVMROOT/llvm -B $LLVMROOT/_build \
+            $TARGET_CMAKE_FLAGS \
+            -DLLVM_PARALLEL_LINK_JOBS=2 \
+            -DCPACK_PACKAGE_FILE_NAME="$RELEASE_BINARY_BASENAME" \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
+            -DLLVM_TARGETS_TO_BUILD=host \
+            -DLLVM_ENABLE_ASSERTIONS=ON \
+            -DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF \
+            -DLLVM_BUILD_LLVM_DYLIB=ON \
+            -DLLVM_LINK_LLVM_DYLIB=ON \
+            -DLLVM_ENABLE_ZSTD=OFF \
+            -DLLVM_ENABLE_LIBXML2=OFF \
+            -DLLVM_ENABLE_CURL=OFF \
+            -DLLVM_ENABLE_HTTPLIB=OFF \
+            -DLLVM_ENABLE_TERMINFO=OFF \
+            -DLLVM_ENABLE_PROJECTS="llvm;clang;lld" \
+            -DLLVM_USE_RELATIVE_PATHS_IN_FILES=ON \
+            -DCLANG_DEFAULT_LINKER=lld \
+            -DCLANG_VENDOR=Tenjin \
+            -DCPACK_GENERATOR=TXZ \
+            -DCPACK_ARCHIVE_THREADS=0
+

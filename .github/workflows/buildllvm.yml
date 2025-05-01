@@ -131,46 +131,20 @@ jobs:
         rm -rf llvmproj/llvm/tools/llvm-exegesis
         sed -i.bak 's/llvm-exegesis//' llvmproj/llvm/test/CMakeLists.txt
 
-    - name: Configure Clang
-      shell: bash
-      run: |
-        # There were some issues on the ARM64 MacOS runners with trying to build x86 object,
-        # so we need to set some extra cmake flags to disable this.
-        cmake -G Ninja -S llvmproj/llvm -B llvmproj/_build \
-            ${{ needs.prepare.outputs.target-cmake-flags }} \
-            -DLLVM_PARALLEL_LINK_JOBS=2 \
-            -DCPACK_PACKAGE_FILE_NAME="${{ needs.prepare.outputs.release-binary-basename }}" \
-            -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DLLVM_TARGETS_TO_BUILD=host \
-            -DLLVM_ENABLE_ASSERTIONS=ON \
-            -DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF \
-            -DLLVM_BUILD_LLVM_DYLIB=ON \
-            -DLLVM_LINK_LLVM_DYLIB=ON \
-            -DLLVM_ENABLE_ZSTD=OFF \
-            -DLLVM_ENABLE_LIBXML2=OFF \
-            -DLLVM_ENABLE_CURL=OFF \
-            -DLLVM_ENABLE_HTTPLIB=OFF \
-            -DLLVM_ENABLE_TERMINFO=OFF \
-            -DLLVM_ENABLE_PROJECTS="llvm;clang;lld" \
-            -DLLVM_USE_RELATIVE_PATHS_IN_FILES=ON \
-            -DCLANG_DEFAULT_LINKER=lld \
-            -DCLANG_VENDOR=Tenjin \
-            -DCPACK_GENERATOR=TXZ \
-            -DCPACK_ARCHIVE_THREADS=0
-
-        ls -lh llvmproj/_build
-
-    - name: Build Clang (natively)
+    - name: Configure and Build Clang (natively)
       shell: bash
       if: ${{ ! startsWith(inputs.runs-on, 'ubuntu-') }}
       run: |
+        bash build_llvm.sh llvmproj "${{ needs.prepare.outputs.target-cmake-flags }}" "${{ needs.prepare.outputs.release-binary-basename }}"
+        ls -lh llvmproj/_build
         ninja -v -C llvmproj/_build
+        ls -lh llvmproj/_build
 
-    - name: Build Clang (in container)
+    - name: Configure and Build Clang (in container)
       if: ${{   startsWith(inputs.runs-on, 'ubuntu-') }}
       uses: docker://ghcr.io/invasy/dev-env-clang:latest
       with:
-        args: ninja -v -C llvmproj/_build
+        args: pwd && ls -lh && bash build_llvm.sh llvmproj "${{ needs.prepare.outputs.target-cmake-flags }}" "${{ needs.prepare.outputs.release-binary-basename }}" && ninja -v -C llvmproj/_build
 
     - name: Build Clang (package)
       shell: bash
