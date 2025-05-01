@@ -27,10 +27,7 @@ jobs:
     outputs:
       release-version: ${{ steps.vars.outputs.release-version }}
       ref: ${{ steps.vars.outputs.ref }}
-      #upload: ${{ steps.vars.outputs.upload }}
       target-cmake-flags: ${{ steps.vars.outputs.target-cmake-flags }}
-      #build-flang: ${{ steps.vars.outputs.build-flang }}
-      #enable-pgo: ${{ steps.vars.outputs.enable-pgo }}
       release-binary-basename: ${{ steps.vars.outputs.release-binary-basename }}
       release-binary-filename: ${{ steps.vars.outputs.release-binary-filename }}
 
@@ -144,7 +141,7 @@ jobs:
       if: ${{   startsWith(inputs.runs-on, 'ubuntu-') }}
       uses: docker://ghcr.io/invasy/dev-env-clang:latest
       with:
-        args: pwd && ls -lh && bash build_llvm.sh llvmproj "${{ needs.prepare.outputs.target-cmake-flags }}" "${{ needs.prepare.outputs.release-binary-basename }}" && ninja -v -C llvmproj/_build
+        args: pwd && ls -lh && cd /github/workspace && pwd && ls -lh && bash build_llvm.sh llvmproj "${{ needs.prepare.outputs.target-cmake-flags }}" "${{ needs.prepare.outputs.release-binary-basename }}" && ninja -v -C llvmproj/_build
 
     - name: Build Clang (package)
       shell: bash
