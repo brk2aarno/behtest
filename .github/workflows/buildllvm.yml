@@ -158,6 +158,8 @@ jobs:
             -DCPACK_GENERATOR=TXZ \
             -DCPACK_ARCHIVE_THREADS=0
 
+        ls -lh llvmproj/_build
+
     - name: Build Clang (natively)
       shell: bash
       if: ${{ ! startsWith(inputs.runs-on, 'ubuntu-') }}
@@ -167,12 +169,13 @@ jobs:
     - name: Build Clang (in container)
       if: ${{   startsWith(inputs.runs-on, 'ubuntu-') }}
       uses: docker://ghcr.io/invasy/dev-env-clang:latest
-      run: |
-        ninja -v -C llvmproj/_build
+      with:
+        args: ninja -v -C llvmproj/_build
 
     - name: Build Clang (package)
       shell: bash
       run: |
+        ls -lh llvmproj/_build
         ninja -v -C llvmproj/_build package
 
     - name: Prep Package
