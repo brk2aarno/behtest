@@ -130,18 +130,19 @@ jobs:
 
     - name: Configure and Build Clang (natively)
       shell: bash
-      if: ${{ ! startsWith(inputs.runs-on, 'ubuntu-') }}
+      if: ${{ !( startsWith(inputs.runs-on, 'ubuntu-') && ! endsWith(inputs.runs-on, '-arm') ) }}
       run: |
-        bash build_llvm.sh llvmproj "${{ needs.prepare.outputs.target-cmake-flags }}" "${{ needs.prepare.outputs.release-binary-basename }}"
+        bash build_llvm.sh llvmproj "${{ needs.prepare.outputs.target-cmake-flags }}" "${{ needs.prepare.outputs.release-binary-basename }}" native
 
     - name: Configure and Build Clang (in container)
-      if: ${{   startsWith(inputs.runs-on, 'ubuntu-') }}
+      if: ${{  ( startsWith(inputs.runs-on, 'ubuntu-') && ! endsWith(inputs.runs-on, '-arm') ) }}
       uses: docker://ghcr.io/invasy/dev-env-clang:latest
       with:
-        args: bash build_llvm.sh llvmproj "${{ needs.prepare.outputs.target-cmake-flags }}" "${{ needs.prepare.outputs.release-binary-basename }}"
+        args: bash build_llvm.sh llvmproj "${{ needs.prepare.outputs.target-cmake-flags }}" "${{ needs.prepare.outputs.release-binary-basename }}" docker
 
     - name: Build Clang (package)
       shell: bash
+      if: ${{ !( startsWith(inputs.runs-on, 'ubuntu-') && ! endsWith(inputs.runs-on, '-arm') ) }}
       run: |
         ls -lh llvmproj/_build
         ninja -v -C llvmproj/_build package
@@ -196,6 +197,8 @@ jobs:
         done
 
         touch ${{ needs.prepare.outputs.release-binary-basename }}/bin/llvm-exegesis
+        rm    ${{ needs.prepare.outputs.release-binary-basename }}/bin/c-index-test
+        touch ${{ needs.prepare.outputs.release-binary-basename }}/bin/c-index-test
 
         # Compute a final tree hash, without the contents of libLLVM*.a and libclang*.a
         cd ${{ needs.prepare.outputs.release-binary-basename }}
