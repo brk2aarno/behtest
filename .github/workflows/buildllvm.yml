@@ -155,7 +155,7 @@ jobs:
         # only be used on bash steps, because it uses the form of /d/files/
         # and other steps expect D:\files.
 
-        mv llvmproj/_build/*.xz .
+        cp llvmproj/_build/*.xz .
         ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
         
         # The .a files that feed in to libLLVM and libClang are huge and we don't need them!
