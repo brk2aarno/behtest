@@ -128,6 +128,9 @@ jobs:
         rm -rf llvmproj/llvm/tools/llvm-exegesis
         sed -i.bak 's/llvm-exegesis//' llvmproj/llvm/test/CMakeLists.txt
 
+    - name: Remove apparently buggy assert lld's Mach-O code
+      run: sed -i.bak 's/assert(isec->wasCoalesced);//' llvmproj/lld/MachO/InputFiles.cpp
+
     - name: Configure and Build Clang (natively)
       shell: bash
       if: ${{ !( startsWith(inputs.runs-on, 'ubuntu-') && ! endsWith(inputs.runs-on, '-arm') ) }}
