@@ -76,7 +76,7 @@ jobs:
           target_cmake_flags="$target_cmake_flags -DDARWIN_osx_ARCHS=$arches -DDARWIN_osx_BUILTIN_ARCHS=$arches"
         fi
         echo "TARGET_CMAKE_FLAGS=$target_cmake_flags" >> $GITHUB_ENV
-        
+ 
     - name: Disable llvm-exegesis
       shell: bash
       run: |
@@ -90,7 +90,7 @@ jobs:
       shell: bash
       if: ${{ !startsWith(matrix.runner, 'ubuntu-') }}
       run: |
-        bash build_llvm.sh llvmproj "$TARGET_CMAKE_FLAGS" "$RELEASE_BINARY_BASENAME" native
+        bash build_llvm.sh llvmproj "{{ env.TARGET_CMAKE_FLAGS }}" "${{ env.RELEASE_BINARY_BASENAME }}" native
 
     - name: Configure and Build Clang (in container)
       if: ${{  startsWith(matrix.runner, 'ubuntu-') }}

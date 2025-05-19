@@ -1,10 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 LLVMROOT=$1
 TARGET_CMAKE_FLAGS=$2
 RELEASE_BINARY_BASENAME=$3
 BUILDER_FLAVOR=$4
 
 BUILD_DIR=$LLVMROOT/_build
+
+set -eux
 
 cmake -G Ninja -S "$LLVMROOT"/llvm -B "$BUILD_DIR" \
             $TARGET_CMAKE_FLAGS \
