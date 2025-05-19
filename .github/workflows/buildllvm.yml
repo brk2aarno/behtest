@@ -149,4 +149,6 @@ jobs:
       if: ${{ (inputs.upload-to-release || '') != '' }}
       run: |
         gh release upload ${{ inputs.upload-to-release }} *.tar.xz
+      env:
+        GH_TOKEN: ${{ github.token }}
 
