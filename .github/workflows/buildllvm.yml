@@ -94,7 +94,7 @@ jobs:
 
     - name: Configure and Build Clang (in container)
       if: ${{  startsWith(matrix.runner, 'ubuntu-') }}
-      uses: docker://aarnotenjin/debian-bullseye-builder:rev658719257897
+      uses: docker://aarnotenjin/debian-bullseye-builder:rev-c3bba190c
       with:
         args: bash build_llvm.sh llvmproj "$TARGET_CMAKE_FLAGS" "$RELEASE_BINARY_BASENAME" docker
 
