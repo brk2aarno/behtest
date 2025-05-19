@@ -1,5 +1,7 @@
 name: BuildLLVM
 
+# based on the LLVM project's release action
+
 on:
   push:
     branches: [ "test-build-llvm" ]
@@ -7,29 +9,21 @@ on:
   workflow_dispatch:
     inputs:
       release-version:
-        description: 'Release Version'
+        description: 'LLVM Release Version'
         required: true
         type: string
-      runs-on:
-        description: "Runner to use for the build"
-        required: true
-        type: choice
-        options:
-          - ubuntu-22.04
-          - ubuntu-22.04-arm
-          - macos-13 # x86_64
-          - macos-14 # arm64
+      upload-to-release:
+        description: 'Upload to a GitHub Release tag in this repo'
+        required: false
+        type: string
 
 jobs:
-  prepare:
-    name: Prepare to build binaries
-    runs-on: ${{ inputs.runs-on }}
-    outputs:
-      release-version: ${{ steps.vars.outputs.release-version }}
-      ref: ${{ steps.vars.outputs.ref }}
-      target-cmake-flags: ${{ steps.vars.outputs.target-cmake-flags }}
-      release-binary-basename: ${{ steps.vars.outputs.release-binary-basename }}
-      release-binary-filename: ${{ steps.vars.outputs.release-binary-filename }}
+  build:
+    strategy:
+      matrix:
+        runner: [ubuntu-22.04, ubuntu-22.04-arm, macos-13, macos-14]
+
+    runs-on: ${{ matrix.runner }}
 
     steps:
     # It's good practice to use setup-python, but this is also required on macos-14
@@ -40,11 +34,6 @@ jobs:
 
     - name: Checkout builder repo
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      # for print_os_arch.py
-
-    - name: Inspect cwd
-      shell: bash
-      run: ls -lh
 
     - name: Checkout LLVM
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -59,27 +48,20 @@ jobs:
       shell: bash
       run: |
         pip install -r ./llvmproj/llvm/utils/git/requirements.txt
-    - name: Inspect cwd again
-      shell: bash
-      run: ls -lh
+
+    - name: Install Ninja
+      uses: llvm/actions/install-ninja@22e9f909d35b50bd1181709564bfe816eaeaae81 # main
 
     - name: Collect Variables
       id: vars
       shell: bash
       run: |
-        trimmed=$(echo ${{ inputs.release-version }} | xargs)
-        release_version="$trimmed"
-        ref="llvmorg-$release_version"
-        upload="false"
-        echo "release-version=$release_version">> $GITHUB_OUTPUT
-        echo "ref=$ref" >> $GITHUB_OUTPUT
-        echo "upload=$upload" >> $GITHUB_OUTPUT
         # Detect necessary CMake flags
         target=$(python3 print_os_arch.py)
         release_binary_basename="LLVM-$release_version-$target"
-        echo "release-binary-basename=$release_binary_basename" >> $GITHUB_OUTPUT
-        echo "release-binary-filename=$release_binary_basename.tar.xz" >> $GITHUB_OUTPUT
-        echo "enable-pgo=false" >> $GITHUB_OUTPUT
+        echo "RELEASE_BINARY_BASENAME=$release_binary_basename" >> $GITHUB_ENV
+        echo "RELEASE_BINARY_FILENAME=$release_binary_basename.tar.xz" >> $GITHUB_ENV
+
         target_cmake_flags="-DLLVM_RELEASE_ENABLE_PGO=OFF"
         # The macOS builds try to cross compile some libraries so we need to
         # add extra CMake args to disable them.
@@ -93,35 +75,8 @@ jobs:
           fi
           target_cmake_flags="$target_cmake_flags -DDARWIN_osx_ARCHS=$arches -DDARWIN_osx_BUILTIN_ARCHS=$arches"
         fi
-        build_flang="false"
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          # The build times out on Windows, so we need to disable LTO.
-          target_cmake_flags="$target_cmake_flags -DLLVM_RELEASE_ENABLE_LTO=OFF"
-        fi
-        echo "target-cmake-flags=$target_cmake_flags" >> $GITHUB_OUTPUT
-        echo "build-flang=$build_flang" >> $GITHUB_OUTPUT
+        echo "TARGET_CMAKE_FLAGS=$target_cmake_flags" >> $GITHUB_ENV
         
-  build-llvm-clang:
-    name: "Build LLVM and Clang"
-    needs: prepare
-    runs-on: ${{ inputs.runs-on }}
-    steps:
-
-    - name: Install Ninja
-      uses: llvm/actions/install-ninja@22e9f909d35b50bd1181709564bfe816eaeaae81 # main
-
-    - name: Checkout builder repo
-      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-    - name: Checkout LLVM
-      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      with:
-        repository: 'llvm/llvm-project'
-        ref: ${{ needs.prepare.outputs.ref }}
-        path: 'llvmproj'
-        clean: false
-        fetch-depth: 1
-
     - name: Disable llvm-exegesis
       shell: bash
       run: |
@@ -133,126 +88,65 @@ jobs:
 
     - name: Configure and Build Clang (natively)
       shell: bash
-      if: ${{ !( startsWith(inputs.runs-on, 'ubuntu-') && ! endsWith(inputs.runs-on, '-arm') ) }}
+      if: ${{ !startsWith(matrix.runner, 'ubuntu-') }}
       run: |
-        bash build_llvm.sh llvmproj "${{ needs.prepare.outputs.target-cmake-flags }}" "${{ needs.prepare.outputs.release-binary-basename }}" native
+        bash build_llvm.sh llvmproj "$TARGET_CMAKE_FLAGS" "$RELEASE_BINARY_BASENAME" native
 
     - name: Configure and Build Clang (in container)
-      if: ${{  ( startsWith(inputs.runs-on, 'ubuntu-') && ! endsWith(inputs.runs-on, '-arm') ) }}
-      uses: docker://ghcr.io/invasy/dev-env-clang:latest
+      if: ${{  startsWith(matrix.runner, 'ubuntu-') }}
+      uses: docker://aarnotenjin/debian-bullseye-builder:rev658719257897
       with:
-        args: bash build_llvm.sh llvmproj "${{ needs.prepare.outputs.target-cmake-flags }}" "${{ needs.prepare.outputs.release-binary-basename }}" docker
+        args: bash build_llvm.sh llvmproj "$TARGET_CMAKE_FLAGS" "$RELEASE_BINARY_BASENAME" docker
 
     - name: Build Clang (package)
       shell: bash
-      if: ${{ !( startsWith(inputs.runs-on, 'ubuntu-') && ! endsWith(inputs.runs-on, '-arm') ) }}
+      if: ${{ !startsWith(matrix.runner, 'ubuntu-') }}
       run: |
+        # This is run conditionally because for docker builds,
+        # build_llvm.sh does the packaging step (in the container).
         ls -lh llvmproj/_build
         ninja -v -C llvmproj/_build package
 
     - name: Prep Package
       shell: bash
       run: |
-        # Copy Release artifact to the workspace so it is easier to upload.
-        # This is necessary, because on Windows, the build-prefix path can
-        # only be used on bash steps, because it uses the form of /d/files/
-        # and other steps expect D:\files.
-
         cp llvmproj/_build/*.xz .
-        ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
+        ls -lh $RELEASE_BINARY_FILENAME
         
         # The .a files that feed in to libLLVM and libClang are huge and we don't need them!
         # But CMake & llvm-config will barf if they are missing, so we'll replace them with empty files.
         mkdir dota
-        tar xf ${{ needs.prepare.outputs.release-binary-filename }}
-        rm     ${{ needs.prepare.outputs.release-binary-filename }}
+        tar xf $RELEASE_BINARY_FILENAME
+        rm     $RELEASE_BINARY_FILENAME
 
-        # Compute an initial tree hash
-        cd ${{ needs.prepare.outputs.release-binary-basename }}
-        git init .
-        git config user.email "b.tenjin@qt.fyi"
-        git config user.name "tenjinbot"
-        git commit --allow-empty -m .
-        git add .
-        git commit -m . | wc -l
-        git log || true
-        sleep 2
-        git status || true
-        echo 'git log H:'
-        git log -n1 --pretty='%H' || (echo 'git log H failed' ; true)
-        echo 'git log T:'
-        git log -n1 --pretty='%T' || (echo 'git log T failed' ; true)
-        intial_treehash=$(git log -n1 --pretty='%T')
-        cd ..
-
-        echo "initial treehash: $initial_treehash"
-        echo '-----------------'
-        ls -lh ${{ needs.prepare.outputs.release-binary-basename }}/*
-        echo '-----------------'
-
-        for x in `ls ${{ needs.prepare.outputs.release-binary-basename }}/lib/libLLVM*.a`; do
+        for x in `ls $RELEASE_BINARY_BASENAME/lib/libLLVM*.a`; do
           mv $x dota/
           touch $x
         done
-        for x in `ls ${{ needs.prepare.outputs.release-binary-basename }}/lib/libclang*.a`; do
+        for x in `ls $RELEASE_BINARY_BASENAME/lib/libclang*.a`; do
           mv $x dota/
           touch $x
         done
 
-        touch ${{ needs.prepare.outputs.release-binary-basename }}/bin/llvm-exegesis
-        rm    ${{ needs.prepare.outputs.release-binary-basename }}/bin/c-index-test
-        touch ${{ needs.prepare.outputs.release-binary-basename }}/bin/c-index-test
+        touch $RELEASE_BINARY_BASENAME/bin/llvm-exegesis
+        rm    $RELEASE_BINARY_BASENAME/bin/c-index-test
+        touch $RELEASE_BINARY_BASENAME/bin/c-index-test
 
-        # Compute a final tree hash, without the contents of libLLVM*.a and libclang*.a
-        cd ${{ needs.prepare.outputs.release-binary-basename }}
-        pwd
-        echo '==============='
-        ls -al
-        echo '==============='
-        git status || true
-        pwd
-        echo 'doing git add .'
-        git add .
-        echo 'doing git commit -m .'
-        git commit -m . | wc -l
-        echo 'doing git log treehash'
-        final_treehash=$(git log -n1 --pretty='%T')
-        echo "final treehash: $final_treehash"
-        echo 'removing .git directory'
-        rm -rf .git
-        cd ..
-
-        (jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash --arg treehash_final $final_treehash > tarball-treehashes.json) || touch tarball-treehashes.json
-
-        #jq -cn '$ARGS.named' --arg treehash_initial $initial_treehash > tarball-treehashes.json
-        
-        echo 'tarball treehashes:'
-        cat   tarball-treehashes.json
-
-        pwd
         echo 'computing git-src.json'
 
-        git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > ${{ needs.prepare.outputs.release-binary-basename }}/git-src.json
-        XZ_OPT=-9 tar caf \
-               ${{ needs.prepare.outputs.release-binary-filename }} \
-               ${{ needs.prepare.outputs.release-binary-basename }}
-        ls -lh ${{ needs.prepare.outputs.release-binary-filename }}
+        git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > $RELEASE_BINARY_BASENAME/git-src.json
+        XZ_OPT=-9 tar caf $RELEASE_BINARY_FILENAME $RELEASE_BINARY_BASENAME
 
+        ls -lh *.tar.*
 
     - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
       with:
-        name: ${{ runner.os }}-${{ runner.arch }}-built_on_${{ inputs.runs-on }}
-        # Due to path differences on Windows when running in bash vs running on node,
-        # we need to search for files in the current workspace.
+        name: ${{ runner.os }}-${{ runner.arch }}-built_on_${{ matrix.runner }}
         path: |
-          ${{ needs.prepare.outputs.release-binary-filename }}
-          tarball-treehashes.json
+          *.tar.xz
 
-    - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
-      with:
-        name: dota_${{ runner.os }}-${{ runner.arch }}-built_on_${{ inputs.runs-on }}
-        path: |
-          tarball-treehashes.json
-          dota
-
+    - name: Upload to GitHub Release
+      if: ${{ (inputs.upload-to-release || '') != '' }}
+      run: |
+        gh release upload ${{ inputs.upload-to-release }} *.tar.xz
 
