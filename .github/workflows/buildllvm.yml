@@ -13,7 +13,7 @@ on:
         required: true
         type: string
       upload-to-release:
-        description: 'Upload to a GitHub Release tag in this repo'
+        description: 'Upload to an existing GitHub Release tag in this repo (if set)'
         required: false
         type: string
 
@@ -56,9 +56,8 @@ jobs:
       id: vars
       shell: bash
       run: |
-        # Detect necessary CMake flags
-        target=$(python3 print_os_arch.py)
-        release_binary_basename="LLVM-$release_version-$target"
+        target=$(python3 .github/scripts/print_os_arch.py)
+        release_binary_basename="LLVM-${{ inputs.release-version }}-$target"
         echo "RELEASE_BINARY_BASENAME=$release_binary_basename" >> $GITHUB_ENV
         echo "RELEASE_BINARY_FILENAME=$release_binary_basename.tar.xz" >> $GITHUB_ENV
 
@@ -90,13 +89,15 @@ jobs:
       shell: bash
       if: ${{ !startsWith(matrix.runner, 'ubuntu-') }}
       run: |
-        bash build_llvm.sh llvmproj "${{ env.TARGET_CMAKE_FLAGS }}" "${{ env.RELEASE_BINARY_BASENAME }}" native
+        bash .github/scripts/build_llvm.sh llvmproj "${{ env.TARGET_CMAKE_FLAGS }}" \
+                                                    "${{ env.RELEASE_BINARY_BASENAME }}" native
 
     - name: Configure and Build Clang (in container)
       if: ${{  startsWith(matrix.runner, 'ubuntu-') }}
       uses: docker://aarnotenjin/debian-bullseye-builder:rev-85f982358
       with:
-        args: bash build_llvm.sh llvmproj "${{ env.TARGET_CMAKE_FLAGS }}" "${{ env.RELEASE_BINARY_BASENAME }}" docker
+        args: bash .github/scripts/build_llvm.sh llvmproj "${{ env.TARGET_CMAKE_FLAGS }}" \
+                                                          "${{ env.RELEASE_BINARY_BASENAME }}" docker
 
     - name: Build Clang (package)
       shell: bash
@@ -133,8 +134,9 @@ jobs:
         touch $RELEASE_BINARY_BASENAME/bin/c-index-test
 
         echo 'computing git-src.json'
+        git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' | jq > $RELEASE_BINARY_BASENAME/git-src.json
+        cat $RELEASE_BINARY_BASENAME/git-src.json
 
-        git log -n1 --pretty='{"commit":"%H","treehash":"%T","url":"${{ github.repositoryUrl }}"}' > $RELEASE_BINARY_BASENAME/git-src.json
         XZ_OPT=-9 tar caf $RELEASE_BINARY_FILENAME $RELEASE_BINARY_BASENAME
 
         ls -lh *.tar.*
